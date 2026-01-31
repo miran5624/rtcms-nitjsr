@@ -27,6 +27,7 @@ export function TimelineModal({ complaintId, open, onOpenChange }: TimelineModal
     useEffect(() => {
         if (open && complaintId) {
             setLoading(true)
+            // todo: maybe cache this response?
             api.get<TimelineEvent[]>(`/complaints/${complaintId}/timeline`)
                 .then(res => setEvents(res.data))
                 .catch(() => setEvents([]))
@@ -51,7 +52,7 @@ export function TimelineModal({ complaintId, open, onOpenChange }: TimelineModal
                         <div className="relative space-y-10 py-4 pl-2 before:absolute before:left-[11px] before:top-6 before:h-[calc(100%-40px)] before:w-[2px] before:bg-muted">
                             {events.map((event, index) => {
                                 const isLast = index === events.length - 1;
-                                // Determine icon and color
+                                // figure out icon and color
                                 let Icon = CheckCircle2;
                                 let color = "text-green-600 bg-white";
 

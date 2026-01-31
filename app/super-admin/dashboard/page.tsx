@@ -172,40 +172,25 @@ export default function SuperAdminDashboard() {
         {/* stats cards */}
         <div className="mb-6 grid gap-4 md:grid-cols-3">
           <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{activeComplaints.length}</p>
-                <p className="text-sm text-muted-foreground">Active Complaints</p>
-              </div>
+            <CardContent className="flex flex-col gap-1 pt-6">
+              <p className="text-2xl font-bold text-foreground">{activeComplaints.length}</p>
+              <p className="text-sm text-muted-foreground">Active Complaints</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{resolved.length}</p>
-                <p className="text-sm text-muted-foreground">Total Resolved</p>
-              </div>
+            <CardContent className="flex flex-col gap-1 pt-6">
+              <p className="text-2xl font-bold text-foreground">{resolved.length}</p>
+              <p className="text-sm text-muted-foreground">Total Resolved</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {activeComplaints.filter(c => getUrgencyLevel(new Date(c.createdAt)) !== 'normal').length}
-                </p>
-                <p className="text-sm text-muted-foreground">Critical / Urgent</p>
-              </div>
+            <CardContent className="flex flex-col gap-1 pt-6">
+              <p className="text-2xl font-bold text-foreground">
+                {activeComplaints.filter(c => getUrgencyLevel(new Date(c.createdAt)) !== 'normal').length}
+              </p>
+              <p className="text-sm text-muted-foreground">Critical / Urgent</p>
             </CardContent>
           </Card>
         </div>

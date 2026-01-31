@@ -85,7 +85,8 @@ export async function createUser(
   );
   const user = r.rows[0];
   if (!user) throw new Error('createUser: no row returned');
-  console.log('User DB Action Complete. ID:', user.id);
+  // user created successfully
+  console.log('user created', user.id);
   return user;
 }
 
@@ -101,7 +102,8 @@ export async function updateUserRoleDepartment(
   );
   const user = r.rows[0];
   if (!user) throw new Error('updateUserRoleDepartment: no row returned');
-  console.log('User DB Action Complete. ID:', user.id);
+  // role updated
+  console.log('updated role for', user.id);
   return user;
 }
 

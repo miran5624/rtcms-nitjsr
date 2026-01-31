@@ -1,3 +1,4 @@
+// getting the db pool stuff
 import { pool } from '../config/database.js';
 import { getIO } from '../utils/socket.js';
 
@@ -11,6 +12,7 @@ const VALID_CATEGORIES = [
   'other',
 ] as const;
 
+// mapping depts to cats
 const DEPARTMENT_TO_CATEGORY: Record<string, string> = {
   hostel: 'hostel',
   mess: 'mess',
@@ -28,6 +30,7 @@ export interface CreateComplaintInput {
   image_url?: string;
 }
 
+// todo: cleanup this messy interface later
 export interface ComplaintRow {
   id: number;
   author_id: number;
@@ -98,12 +101,12 @@ export async function listComplaints(
        where c.author_id = $1 order by c.created_at desc`,
       [userId]
     );
-    console.log('[listComplaints] student author_id:', userId, 'result count:', r.rows.length);
+    // fetching for student
+    console.log('fetching complaints for student', userId);
     return r.rows;
   }
 
-  // For Admins and Super Admins (Open Access)
-  // No filtering by department anymore. Join emails.
+  // showing everything for admins
   const r = await pool.query<ComplaintRow>(
     `select c.id, c.author_id, c.category, c.status, c.priority, c.title, c.description, c.image_url, c.claimed_by, c.escalation_flag, c.created_at, c.updated_at,
             u1.email as author_email, u2.email as claimer_email
@@ -112,7 +115,7 @@ export async function listComplaints(
      left join users u2 on c.claimed_by = u2.id
      order by c.created_at desc`
   );
-  console.log('[listComplaints] admin/super_admin (Open Access) result count:', r.rows.length);
+  console.log('admin access - fetching all', r.rows.length);
   return r.rows;
 }
 
@@ -281,9 +284,11 @@ export async function addComplaintUpdate(
         getIO().emit('complaint_timeline_update', { complaintId, update }); // Broad cast for simplicity in this demo
       }
     } catch (e) {
-      console.error('Socket emit failed', e);
+      // socket error?
+      console.log('oops socket failed', e);
     }
   }
+  // @ts-ignore
   return update!;
 }
 

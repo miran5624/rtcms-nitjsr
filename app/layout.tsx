@@ -9,25 +9,12 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const robotoSerif = Roboto_Serif({ subsets: ['latin'], variable: '--font-roboto-serif' })
 
 export const metadata: Metadata = {
-  title: 'NIT Jamshedpur - Smart Complaint Management System',
-  description: 'Official complaint management portal for National Institute of Technology Jamshedpur students and staff',
-  generator: 'v0.app',
+  title: "NIT Jamshedpur - RTCMS",
+  description: "Campus Complaint Management System",
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
 }
 

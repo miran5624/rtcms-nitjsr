@@ -53,7 +53,7 @@ const faqData: Record<string, { question: string; answer: string }[]> = {
 export default function HomePage() {
   const router = useRouter()
   const [openFaq, setOpenFaq] = useState<string | null>(null)
-  
+
   // check if user is already logged in
   useEffect(() => {
     const user = sessionStorage.getItem('user')
@@ -75,11 +75,11 @@ export default function HomePage() {
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id)
   }
-  
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main>
         {/* hero section with faq topic nav */}
         <section className="bg-secondary py-16">
@@ -91,16 +91,17 @@ export default function HomePage() {
                   Smart Complaint Management System
                 </h2>
                 <p className="mb-8 text-lg text-muted-foreground">
-                  A streamlined platform for students and staff to raise, track, and resolve 
+                  A streamlined platform for students and staff to raise, track, and resolve
                   campus-related complaints efficiently.
                 </p>
                 <div className="flex flex-col items-start gap-4 sm:flex-row">
                   <Link href="/signup">
                     <Button size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                      Get Started
+                      Login
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
+                  {/* <Button variant="ghost">Learn More</Button> */}
                   <Link href="/login">
                     <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent">
                       Sign In
@@ -129,16 +130,16 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        
+
         {/* detailed faq sections */}
         <section id="faqs" className="scroll-mt-24 py-16">
           <div className="container mx-auto max-w-3xl px-4">
             <h3 className="mb-12 text-center font-serif text-2xl font-bold text-primary">
               Frequently Asked Questions
             </h3>
-            
+
             {faqTopics.map((topic) => (
-              <div key={topic.id} id={topic.id} className="mb-12 scroll-mt-8">
+              <div key={topic.id} id={topic.id} className="mb-12 scroll-mt-34">
                 <h4 className="mb-6 border-b border-border pb-2 font-serif text-xl font-semibold text-primary">
                   {topic.label} FAQs
                 </h4>
@@ -155,8 +156,8 @@ export default function HomePage() {
                           <span className="pr-4 font-medium text-foreground">
                             {faq.question}
                           </span>
-                          <ChevronDown 
-                            className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+                          <ChevronDown
+                            className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
                           />
                         </button>
                         {isOpen && (
@@ -177,56 +178,54 @@ export default function HomePage() {
         <section className="bg-secondary py-16">
           <div className="container mx-auto px-4">
             <h3 className="mb-12 text-center font-serif text-2xl font-bold text-primary">
-              Key Features
+              Steps to Follow
             </h3>
-            
+
             <div className="grid gap-8 md:grid-cols-3">
               {/* feature 1 */}
               <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <FileText className="h-6 w-6 text-primary" />
                 </div>
-                <h4 className="mb-2 font-semibold text-foreground">Easy Complaint Filing</h4>
+                <h4 className="mb-2 font-semibold text-foreground">Step 1</h4>
                 <p className="text-sm text-muted-foreground">
-                  Submit complaints across categories including hostel, mess, academic, 
-                  infrastructure, and network issues.
+                  Check if your complaint is already addressed in FAQs
                 </p>
               </div>
-              
+
               {/* feature 2 */}
               <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Clock className="h-6 w-6 text-primary" />
                 </div>
-                <h4 className="mb-2 font-semibold text-foreground">Real-time Tracking</h4>
+                <h4 className="mb-2 font-semibold text-foreground">Step 2</h4>
                 <p className="text-sm text-muted-foreground">
-                  Track your complaint status in real-time with a complete activity 
-                  timeline showing all updates.
+                  If not addressed, proceed to register a new complaint
                 </p>
               </div>
-              
+
               {/* feature 3 */}
               <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                   <Shield className="h-6 w-6 text-primary" />
                 </div>
-                <h4 className="mb-2 font-semibold text-foreground">Secure & Transparent</h4>
+                <h4 className="mb-2 font-semibold text-foreground">Step 3</h4>
                 <p className="text-sm text-muted-foreground">
-                  Role-based access ensures secure handling while maintaining complete 
-                  transparency in the resolution process.
+                  Track your complaint status in real-time with a complete activity
+                  timeline showing all updates.
                 </p>
               </div>
             </div>
           </div>
         </section>
-        
+
         {/* important contacts section */}
         <section id="contacts" className="scroll-mt-24 py-16">
           <div className="container mx-auto px-4">
             <h3 className="mb-12 text-center font-serif text-2xl font-bold text-primary">
               Important Contacts
             </h3>
-            
+
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* hostel office */}
               <div className="rounded-lg border border-border bg-card p-6">
@@ -235,10 +234,10 @@ export default function HomePage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p className="text-foreground">
-                    <span className="font-medium">Chief Warden:</span> Dr. [Name]
+                    <span className="font-medium">Chief Warden:</span> Dr. Mukesh Tyagi
                   </p>
                   <p className="text-muted-foreground">
-                    Phone: +91-XXXXXXXXXX
+                    Phone: +91-6767223138
                   </p>
                   <p className="text-muted-foreground">
                     Email: chiefwarden@nitjsr.ac.in
@@ -253,10 +252,10 @@ export default function HomePage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p className="text-foreground">
-                    <span className="font-medium">Mess Coordinator:</span> [Name]
+                    <span className="font-medium">Mess Coordinator:</span> Lovely Singh
                   </p>
                   <p className="text-muted-foreground">
-                    Phone: +91-XXXXXXXXXX
+                    Phone: +91-9472250190
                   </p>
                   <p className="text-muted-foreground">
                     Email: mess@nitjsr.ac.in
@@ -271,10 +270,10 @@ export default function HomePage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p className="text-foreground">
-                    <span className="font-medium">Dean Academics:</span> Prof. [Name]
+                    <span className="font-medium">Dean Academics:</span> Prof. Jatil Yadav
                   </p>
                   <p className="text-muted-foreground">
-                    Phone: +91-XXXXXXXXXX
+                    Phone: +91-9472050190
                   </p>
                   <p className="text-muted-foreground">
                     Email: deanacad@nitjsr.ac.in
@@ -289,10 +288,10 @@ export default function HomePage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p className="text-foreground">
-                    <span className="font-medium">System Admin:</span> [Name]
+                    <span className="font-medium">System Admin:</span> Koushlendra Kumar
                   </p>
                   <p className="text-muted-foreground">
-                    Phone: +91-XXXXXXXXXX
+                    Phone: +91-9472080190
                   </p>
                   <p className="text-muted-foreground">
                     Email: it@nitjsr.ac.in
@@ -307,10 +306,10 @@ export default function HomePage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p className="text-foreground">
-                    <span className="font-medium">Estate Officer:</span> [Name]
+                    <span className="font-medium">Estate Officer:</span> Dr. Subrata Dutta
                   </p>
                   <p className="text-muted-foreground">
-                    Phone: +91-XXXXXXXXXX
+                    Phone: +91-9472280190
                   </p>
                   <p className="text-muted-foreground">
                     Email: estate@nitjsr.ac.in
@@ -328,7 +327,7 @@ export default function HomePage() {
                     <span className="font-medium">Reception:</span> Main Office
                   </p>
                   <p className="text-muted-foreground">
-                    Phone: +91-XXXXXXXXXX
+                    Phone: +91-9472290560
                   </p>
                   <p className="text-muted-foreground">
                     Email: enquiry@nitjsr.ac.in

@@ -38,6 +38,7 @@ export default function AdminDashboard() {
   const { user, loading } = useAuth('admin')
   const [unclaimed, setUnclaimed] = useState<Complaint[]>([])
   const [myClaims, setMyClaims] = useState<Complaint[]>([])
+  const [myResolved, setMyResolved] = useState<Complaint[]>([])
   const [resolved, setResolved] = useState<Complaint[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [claiming, setClaiming] = useState<string | null>(null)
@@ -69,18 +70,29 @@ export default function AdminDashboard() {
     }
   }
 
+
+
   const loadData = useCallback(async () => {
     if (!user) return
     try {
       const { data } = await api.get<ApiComplaint[]>('/complaints')
       const list = Array.isArray(data) ? data : []
       const mapped = list.map((c) => mapApiComplaintToFrontend(c))
+
       setUnclaimed(mapped.filter((c) => (c.status === 'pending' || c.status === 'open') && !c.claimedBy))
-      setMyClaims(mapped.filter((c) => c.claimedBy === user.id))
+
+      // Active claims only for the main card
+      setMyClaims(mapped.filter((c) => c.claimedBy === user.id && !['resolved', 'closed', 'rejected'].includes(c.status)))
+
+      // Resolved history for the bottom section
+      setMyResolved(mapped.filter((c) => c.claimedBy === user.id && ['resolved', 'closed', 'rejected'].includes(c.status)))
+
+      // Global resolved (keep for superadmin view logic if needed later, but standard admins use myResolved)
       setResolved(mapped.filter((c) => c.status === 'resolved' || c.status === 'rejected'))
     } catch {
       setUnclaimed([])
       setMyClaims([])
+      setMyResolved([])
       setResolved([])
     }
   }, [user])
@@ -193,40 +205,25 @@ export default function AdminDashboard() {
         {/* stats cards */}
         <div className="mb-6 grid gap-4 md:grid-cols-3">
           <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-100">
-                <FileText className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{unclaimed.length}</p>
-                <p className="text-sm text-muted-foreground">Unclaimed Complaints</p>
-              </div>
+            <CardContent className="flex flex-col gap-1 pt-6">
+              <p className="text-2xl font-bold text-foreground">{unclaimed.length}</p>
+              <p className="text-sm text-muted-foreground">Unclaimed Complaints</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                <Lock className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{myClaims.length}</p>
-                <p className="text-sm text-muted-foreground">My Claims</p>
-              </div>
+            <CardContent className="flex flex-col gap-1 pt-6">
+              <p className="text-2xl font-bold text-foreground">{myClaims.length}</p>
+              <p className="text-sm text-muted-foreground">My Claims</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="flex items-center gap-4 pt-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {unclaimed.filter(c => getUrgencyLevel(new Date(c.createdAt)) !== 'normal').length}
-                </p>
-                <p className="text-sm text-muted-foreground">Urgent Cases</p>
-              </div>
+            <CardContent className="flex flex-col gap-1 pt-6">
+              <p className="text-2xl font-bold text-foreground">
+                {unclaimed.filter(c => getUrgencyLevel(new Date(c.createdAt)) !== 'normal').length}
+              </p>
+              <p className="text-sm text-muted-foreground">Urgent Cases</p>
             </CardContent>
           </Card>
         </div>
@@ -247,13 +244,14 @@ export default function AdminDashboard() {
               {unclaimed.length > 0 ? (
                 <div className="space-y-3">
                   {unclaimed.map(complaint => {
+                    // calc time elapsed and check if urgent
                     const elapsed = getTimeElapsed(new Date(complaint.createdAt))
                     const urgency = getUrgencyLevel(new Date(complaint.createdAt))
 
                     return (
                       <div
                         key={complaint.id}
-                        className={`rounded-lg border border-border p-4 ${getUrgencyStyles(new Date(complaint.createdAt))}`}
+                        className="rounded-lg border border-primary/30 bg-primary/5 p-4"
                       >
                         <div className="mb-2 flex items-start justify-between gap-2">
                           <div className="flex-1">
@@ -443,9 +441,51 @@ export default function AdminDashboard() {
         )}
 
         {/* time-based urgency legend */}
+
+
+        {/* My Resolved History */}
         <Card className="mt-6">
-          <CardContent className="py-4">
-            {/* ... */}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Recently Solved Issues
+            </CardTitle>
+            <CardDescription>
+              History of complaints you have successfully resolved
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {myResolved.length > 0 ? (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {myResolved.map(complaint => (
+                  <div
+                    key={complaint.id}
+                    onClick={() => setSelectedComplaint(complaint)}
+                    className="cursor-pointer rounded-lg border border-border p-4 transition-all hover:bg-muted/50 hover:shadow-sm"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <h4 className="font-medium text-foreground line-clamp-1 flex-1">{complaint.title}</h4>
+                      <Badge variant="outline" className="shrink-0 bg-green-50 text-green-700 border-green-200">
+                        {complaint.status}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {categoryLabels[complaint.category]} • ID: {complaint.id.slice(0, 8)}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Resolved {getTimeElapsed(new Date(complaint.updatedAt)).text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
+                <CheckCircle className="h-12 w-12 text-muted-foreground/20 mb-3" />
+                <p>No resolved history yet.</p>
+                <p className="text-sm">Complaints you resolve will appear here.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -495,35 +535,37 @@ export default function AdminDashboard() {
                     ) : null}
                   </div>
                 </ScrollArea>
-                <div className="mt-6 flex justify-end gap-3 pt-2 border-t">
-                  <Button
-                    onClick={() => {
-                      // Open Add Update Dialog
-                      setUpdateMessage('')
-                      setUpdateDialogOpen(true)
-                    }}
-                    variant="outline"
-                  >
-                    Add Update
-                  </Button>
-                  <Button
-                    onClick={handleQuickResolve}
-                    disabled={isResolving}
-                    className="bg-green-600 text-white hover:bg-green-700"
-                  >
-                    {isResolving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Resolving...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" />
-                        Resolve Issue
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {selectedComplaint && !['resolved', 'closed', 'rejected'].includes(selectedComplaint.status) && (
+                  <div className="mt-6 flex justify-end gap-3 pt-2 border-t">
+                    <Button
+                      onClick={() => {
+                        // Open Add Update Dialog
+                        setUpdateMessage('')
+                        setUpdateDialogOpen(true)
+                      }}
+                      variant="outline"
+                    >
+                      Add Update
+                    </Button>
+                    <Button
+                      onClick={handleQuickResolve}
+                      disabled={isResolving}
+                      className="bg-green-600 text-white hover:bg-green-700"
+                    >
+                      {isResolving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Resolving...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Resolve Issue
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </>
             )}
           </DialogContent>

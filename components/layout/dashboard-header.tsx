@@ -13,13 +13,13 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
   const router = useRouter()
-  
+
   const handleLogout = () => {
     // clear session storage
     sessionStorage.removeItem('user')
     router.push('/login')
   }
-  
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'student': return 'Student'
@@ -28,7 +28,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
       default: return role
     }
   }
-  
+
   return (
     <header className="w-full border-b border-border bg-background">
       {/* main header */}
@@ -36,10 +36,10 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* logo */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary">
-              <GraduationCap className="h-6 w-6 text-primary-foreground" />
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+              <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
-            
+
             {/* title */}
             <div className="flex flex-col">
               <h1 className="font-serif text-lg font-bold text-primary md:text-xl">
@@ -50,7 +50,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               </p>
             </div>
           </div>
-          
+
           {/* user info */}
           {user && (
             <div className="flex items-center gap-4">
@@ -61,9 +61,9 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                   {getRoleLabel(user.role)}
                 </span>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleLogout}
                 className="gap-2 bg-transparent"
               >
@@ -74,7 +74,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           )}
         </div>
       </div>
-      
+
       {/* nav bar */}
       <nav className="bg-primary">
         <div className="container mx-auto flex items-center gap-6 px-4 py-2">
@@ -88,7 +88,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               </Link>
             </>
           )}
-          
+
           {user?.role === 'admin' && (
             <>
               <Link href="/admin/dashboard" className="text-sm text-primary-foreground hover:text-primary-foreground/80">
@@ -99,7 +99,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               </Link>
             </>
           )}
-          
+
           {user?.role === 'super_admin' && (
             <>
               <Link href="/super-admin/dashboard" className="text-sm text-primary-foreground hover:text-primary-foreground/80">

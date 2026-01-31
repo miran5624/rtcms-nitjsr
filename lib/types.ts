@@ -18,6 +18,7 @@ export type ComplaintStatus =
   | 'resolved'
   | 'escalated'
   | 'closed'
+  | 'rejected'
 
 export interface User {
   id: string
@@ -153,5 +154,6 @@ export const statusConfig: Record<ComplaintStatus, { label: string; color: strin
   in_progress: { label: 'In Progress', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
   resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800 border-green-300' },
   escalated: { label: 'Escalated', color: 'bg-red-100 text-red-800 border-red-300' },
-  closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800 border-gray-300' }
+  closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800 border-gray-300' },
+  rejected: { label: 'Rejected', color: 'bg-red-50 text-red-600 border-red-200' }
 }

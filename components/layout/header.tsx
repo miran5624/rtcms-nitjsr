@@ -15,10 +15,10 @@ export function Header({ showAuthButtons = true }: HeaderProps) {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center">
           {/* logo - left aligned */}
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary">
-            <GraduationCap className="h-8 w-8 text-primary-foreground" />
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+            <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
-          
+
           {/* institute name - centered */}
           <div className="flex flex-1 flex-col items-center text-center">
             <h1 className="font-serif text-xl font-bold text-primary md:text-2xl">
@@ -28,36 +28,36 @@ export function Header({ showAuthButtons = true }: HeaderProps) {
               Smart Complaint Management System
             </p>
           </div>
-          
+
           {/* spacer to balance layout */}
           <div className="hidden w-14 shrink-0 md:block" />
         </div>
       </div>
-      
+
       {/* navigation bar */}
       <nav className="bg-primary">
         <div className="container mx-auto flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-6">
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="text-sm text-primary-foreground hover:text-primary-foreground/80"
             >
               Home
             </Link>
-            <Link 
-              href="/#faqs" 
+            <Link
+              href="/#faqs"
               className="text-sm text-primary-foreground hover:text-primary-foreground/80"
             >
               FAQs
             </Link>
-            <Link 
-              href="/#contacts" 
+            <Link
+              href="/#contacts"
               className="text-sm text-primary-foreground hover:text-primary-foreground/80"
             >
               Important Contacts
             </Link>
           </div>
-          
+
           {showAuthButtons && (
             <div className="flex items-center gap-4">
               <Link

@@ -16,7 +16,7 @@ import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-react'
 import { isValidNITJSREmail, getRedirectPath } from '@/lib/auth'
 import { api } from '@/lib/services/api'
 
-function parseJwtPayload(token: string): { userId?: number; sub?: string; email?: string; role?: string } {
+function parseJwtPayload(token: string): { userId?: number; sub?: string; email?: string; role?: string; department?: string } {
   try {
     const base64Url = token.split('.')[1]
     if (!base64Url) return {}
@@ -78,6 +78,7 @@ export default function LoginPage() {
       const redirectPath = getRedirectPath(role as 'student' | 'admin' | 'super_admin')
       router.push(redirectPath)
     } catch (err: unknown) {
+      // @ts-ignore
       const res = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string }; status?: number } }).response
         : null
