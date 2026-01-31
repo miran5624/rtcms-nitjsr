@@ -29,7 +29,11 @@ export function classifyRoleAndDepartment(email: string): ClassifiedUser {
   };
 
   if (vipMap[lower]) {
-    return { role: 'admin', department: vipMap[lower] };
+    const dept = vipMap[lower];
+    if (dept === 'superadmin') {
+      return { role: 'super_admin', department: 'all' };
+    }
+    return { role: 'admin', department: dept };
   }
 
   if (STUDENT_EMAIL_REGEX.test(lower)) {

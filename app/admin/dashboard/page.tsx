@@ -147,6 +147,8 @@ export default function AdminDashboard() {
   const getUrgencyStyles = (createdAt: Date) => {
     const level = getUrgencyLevel(createdAt)
     switch (level) {
+      case 'escalated':
+        return 'border-l-4 border-l-purple-600 bg-purple-50'
       case 'critical':
         return 'border-l-4 border-l-destructive bg-destructive/5'
       case 'warning':
@@ -259,6 +261,11 @@ export default function AdminDashboard() {
                               <h4 className="font-medium text-foreground break-words break-all">
                                 {complaint.title}
                               </h4>
+                              {urgency === 'escalated' && (
+                                <Badge variant="destructive" className="bg-purple-600 hover:bg-purple-700">
+                                  Escalated
+                                </Badge>
+                              )}
                               {urgency === 'critical' && (
                                 <AlertTriangle className="h-4 w-4 text-destructive" />
                               )}
@@ -272,18 +279,21 @@ export default function AdminDashboard() {
                           </div>
                           <Badge
                             variant="outline"
-                            className={urgency === 'critical'
-                              ? 'border-destructive bg-destructive/10 text-destructive'
-                              : urgency === 'warning'
-                                ? 'border-warning bg-warning/10 text-warning'
-                                : 'border-muted-foreground'
+                            className={
+                              urgency === 'escalated'
+                                ? 'border-purple-600 text-purple-700 bg-purple-50'
+                                : urgency === 'critical'
+                                  ? 'border-destructive bg-destructive/10 text-destructive'
+                                  : urgency === 'warning'
+                                    ? 'border-warning bg-warning/10 text-warning'
+                                    : 'border-muted-foreground'
                             }
                           >
                             {elapsed.text}
                           </Badge>
                         </div>
 
-                        <p className="mb-3 text-sm text-muted-foreground line-clamp-2 break-words break-all">
+                        <p className="mb-3 text-sm text-muted-foreground line-clamp-2 break-all whitespace-normal">
                           {complaint.description}
                         </p>
 
@@ -342,7 +352,7 @@ export default function AdminDashboard() {
                     >
                       <div className="mb-2 flex items-start justify-between gap-2">
                         <div>
-                          <h4 className="font-medium text-foreground">
+                          <h4 className="font-medium text-foreground break-all whitespace-normal">
                             {complaint.title}
                           </h4>
                           <p className="text-sm text-muted-foreground">
@@ -363,9 +373,9 @@ export default function AdminDashboard() {
 
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-muted-foreground">
-                          Claimed {complaint.claimedAt
-                            ? getTimeElapsed(new Date(complaint.claimedAt)).text
-                            : 'N/A'
+                          {complaint.claimedByEmail
+                            ? `Claimed by: ${complaint.claimedByEmail}`
+                            : (complaint.status === 'in_progress' ? 'Claimed by: You' : 'Unclaimed')
                           }
                         </p>
                         <span className="text-xs font-medium text-primary">
@@ -441,12 +451,18 @@ export default function AdminDashboard() {
 
         {/* Modal for Claimed Complaint */}
         <Dialog open={!!selectedComplaint} onOpenChange={(open) => !open && setSelectedComplaint(null)}>
-          <DialogContent className="max-w-2xl min-h-[300px]">
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{selectedComplaint?.title}</DialogTitle>
+              <DialogTitle className="break-all whitespace-normal pr-4">{selectedComplaint?.title}</DialogTitle>
               <DialogDescription>
                 {selectedComplaint ? categoryLabels[selectedComplaint.category] : ''} • ID: {selectedComplaint?.id.slice(0, 8)}...
               </DialogDescription>
+              {selectedComplaint && (
+                <div className="mt-2 text-xs text-muted-foreground bg-muted p-2 rounded">
+                  <p><strong>Filed By:</strong> {selectedComplaint.studentEmail}</p>
+                  {selectedComplaint.claimedByEmail && <p><strong>Claimed By:</strong> {selectedComplaint.claimedByEmail}</p>}
+                </div>
+              )}
             </DialogHeader>
 
             {modalLoading ? (
@@ -473,13 +489,13 @@ export default function AdminDashboard() {
                         <img
                           src={selectedComplaint.imageUrl}
                           alt="Complaint Proof"
-                          className="max-w-full h-auto rounded-md object-contain border bg-gray-50"
+                          className="max-w-full h-auto max-h-[40vh] object-contain rounded-md border bg-gray-50 mx-auto"
                         />
                       </div>
                     ) : null}
                   </div>
                 </ScrollArea>
-                <DialogFooter className="flex gap-2 sm:justify-end">
+                <div className="mt-6 flex justify-end gap-3 pt-2 border-t">
                   <Button
                     onClick={() => {
                       // Open Add Update Dialog
@@ -507,7 +523,7 @@ export default function AdminDashboard() {
                       </>
                     )}
                   </Button>
-                </DialogFooter>
+                </div>
               </>
             )}
           </DialogContent>
@@ -543,6 +559,6 @@ export default function AdminDashboard() {
         </Dialog>
 
       </main>
-    </div>
+    </div >
   )
 }

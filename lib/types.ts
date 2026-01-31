@@ -90,8 +90,9 @@ export function getTimeElapsed(date: Date): { minutes: number; hours: number; te
 }
 
 // urgency levels based on time elapsed
-export function getUrgencyLevel(createdAt: Date): 'normal' | 'warning' | 'critical' {
+export function getUrgencyLevel(createdAt: Date): 'normal' | 'warning' | 'critical' | 'escalated' {
   const { minutes } = getTimeElapsed(createdAt)
+  if (minutes > 48 * 60) return 'escalated' // > 48 hours
   if (minutes > 24 * 60) return 'critical' // > 24 hours
   if (minutes > 30) return 'warning' // > 30 minutes
   return 'normal'
@@ -120,20 +121,22 @@ export interface ApiComplaint {
   escalation_flag: boolean
   created_at: string
   updated_at: string
+  author_email: string
+  claimer_email: string | null
 }
 
 export function mapApiComplaintToFrontend(api: ApiComplaint, currentUserEmail?: string): Complaint {
   return {
     id: String(api.id),
     studentId: String(api.author_id),
-    studentEmail: currentUserEmail ?? '',
+    studentEmail: api.author_email || currentUserEmail || '', // Use backend email preferably
     studentName: '',
     category: (api.category === 'other' ? 'others' : api.category) as ComplaintCategory,
     title: api.title,
     description: api.description ?? '',
     status: api.status as ComplaintStatus,
     claimedBy: api.claimed_by ? String(api.claimed_by) : null,
-    claimedByEmail: null,
+    claimedByEmail: api.claimer_email,
     claimedAt: null,
     imageUrl: api.image_url,
     createdAt: new Date(api.created_at),

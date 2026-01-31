@@ -34,8 +34,9 @@ export default function StudentDashboard() {
   const { user, loading } = useAuth('student')
   const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null)
   const [history, setHistory] = useState<Complaint[]>([])
+  const [complaints, setComplaints] = useState<Complaint[]>([])
   const [refreshing, setRefreshing] = useState(false)
-  const [timelineId, setTimelineId] = useState<number | null>(null)
+  const [timelineId, setTimelineId] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     if (!user) return
@@ -142,7 +143,7 @@ export default function StudentDashboard() {
                     <div className="rounded-lg border border-border bg-card p-4">
                       <div className="mb-3 flex items-start justify-between">
                         <div>
-                          <h4 className="font-medium text-foreground">
+                          <h4 className="font-medium text-foreground break-all whitespace-normal">
                             {activeComplaint.title}
                           </h4>
                           <p className="text-sm text-muted-foreground">
@@ -157,7 +158,7 @@ export default function StudentDashboard() {
                         </Badge>
                       </div>
 
-                      <p className="mb-3 text-sm text-muted-foreground break-words break-all">
+                      <p className="mb-3 text-sm text-muted-foreground break-all whitespace-normal">
                         {activeComplaint.description}
                       </p>
 
@@ -186,7 +187,7 @@ export default function StudentDashboard() {
                         variant="outline"
                         size="sm"
                         className="gap-2"
-                        onClick={() => setTimelineId(parseInt(activeComplaint.id))}
+                        onClick={() => setTimelineId(activeComplaint.id)}
                       >
                         <Activity className="h-4 w-4 text-primary" />
                         Track Status

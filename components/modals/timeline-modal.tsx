@@ -15,7 +15,7 @@ interface TimelineEvent {
 }
 
 interface TimelineModalProps {
-    complaintId: number | null
+    complaintId: string | null
     open: boolean
     onOpenChange: (open: boolean) => void
 }
@@ -36,19 +36,19 @@ export function TimelineModal({ complaintId, open, onOpenChange }: TimelineModal
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md">
+            <DialogContent className="sm:max-w-xl w-full">
                 <DialogHeader>
                     <DialogTitle>Complaint Timeline</DialogTitle>
                     <DialogDescription>Track the progress of your complaint</DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="max-h-[60vh] pr-4">
+                <ScrollArea className="max-h-[80vh] pr-4">
                     {loading ? (
                         <div className="flex h-32 items-center justify-center">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     ) : (
-                        <div className="relative space-y-8 pl-2 before:absolute before:left-[11px] before:top-2 before:h-[calc(100%-20px)] before:w-[2px] before:bg-muted">
+                        <div className="relative space-y-10 py-4 pl-2 before:absolute before:left-[11px] before:top-6 before:h-[calc(100%-40px)] before:w-[2px] before:bg-muted">
                             {events.map((event, index) => {
                                 const isLast = index === events.length - 1;
                                 // Determine icon and color
@@ -69,17 +69,17 @@ export function TimelineModal({ complaintId, open, onOpenChange }: TimelineModal
                                 }
 
                                 return (
-                                    <div key={index} className="relative flex gap-4">
-                                        <div className={`relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-background ${color}`}>
-                                            <Icon className="h-4 w-4" />
+                                    <div key={index} className="relative flex gap-6">
+                                        <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-background ${color}`}>
+                                            <Icon className="h-5 w-5" />
                                         </div>
-                                        <div className="-mt-1 flex-1">
-                                            <p className="font-medium leading-none">{event.title}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">
+                                        <div className="flex-1 min-w-0 pt-0.5">
+                                            <p className="font-semibold text-lg leading-none mb-1.5">{event.title}</p>
+                                            <p className="text-sm text-muted-foreground mb-3">
                                                 {format(new Date(event.timestamp), "MMM d, h:mm a")}
                                             </p>
                                             {event.description && (
-                                                <p className="mt-2 text-sm text-muted-foreground bg-muted/40 p-2 rounded-md">
+                                                <p className="text-sm text-muted-foreground bg-muted/40 p-4 rounded-md break-words whitespace-normal border border-border/50 shadow-sm">
                                                     {event.description}
                                                 </p>
                                             )}
@@ -89,7 +89,7 @@ export function TimelineModal({ complaintId, open, onOpenChange }: TimelineModal
                             })}
 
                             {events.length === 0 && !loading && (
-                                <p className="text-center text-muted-foreground">No updates found.</p>
+                                <p className="text-center text-muted-foreground py-8">No updates found.</p>
                             )}
                         </div>
                     )}

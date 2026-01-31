@@ -41,6 +41,8 @@ export interface ComplaintRow {
   escalation_flag: boolean;
   created_at: Date;
   updated_at: Date;
+  author_email: string;
+  claimer_email: string | null;
 }
 
 export interface ComplaintUpdateRow {
@@ -88,43 +90,40 @@ export async function listComplaints(
 ): Promise<ComplaintRow[]> {
   if (role === 'student') {
     const r = await pool.query<ComplaintRow>(
-      `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
-       from complaints where author_id = $1 order by created_at desc`,
+      `select c.id, c.author_id, c.category, c.status, c.priority, c.title, c.description, c.image_url, c.claimed_by, c.escalation_flag, c.created_at, c.updated_at,
+              u1.email as author_email, u2.email as claimer_email
+       from complaints c
+       join users u1 on c.author_id = u1.id
+       left join users u2 on c.claimed_by = u2.id
+       where c.author_id = $1 order by c.created_at desc`,
       [userId]
     );
     console.log('[listComplaints] student author_id:', userId, 'result count:', r.rows.length);
     return r.rows;
   }
-  if (role === 'super_admin') {
-    const r = await pool.query<ComplaintRow>(
-      `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
-       from complaints order by created_at desc`
-    );
-    console.log('[listComplaints] super_admin result count:', r.rows.length);
-    return r.rows;
-  }
-  const filterCat = departmentToFilterCategory(department);
-  if (filterCat === null) {
-    const r = await pool.query<ComplaintRow>(
-      `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
-       from complaints order by created_at desc`
-    );
-    console.log('[listComplaints] admin (General/All) result count:', r.rows.length);
-    return r.rows;
-  }
+
+  // For Admins and Super Admins (Open Access)
+  // No filtering by department anymore. Join emails.
   const r = await pool.query<ComplaintRow>(
-    `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
-     from complaints where lower(category::text) = lower($1) order by created_at desc`,
-    [filterCat]
+    `select c.id, c.author_id, c.category, c.status, c.priority, c.title, c.description, c.image_url, c.claimed_by, c.escalation_flag, c.created_at, c.updated_at,
+            u1.email as author_email, u2.email as claimer_email
+     from complaints c
+     join users u1 on c.author_id = u1.id
+     left join users u2 on c.claimed_by = u2.id
+     order by c.created_at desc`
   );
-  console.log('[listComplaints] admin department filter:', filterCat, 'result count:', r.rows.length);
+  console.log('[listComplaints] admin/super_admin (Open Access) result count:', r.rows.length);
   return r.rows;
 }
 
 export async function getComplaintById(id: number): Promise<ComplaintRow | null> {
   const r = await pool.query<ComplaintRow>(
-    `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
-     from complaints where id = $1`,
+    `select c.id, c.author_id, c.category, c.status, c.priority, c.title, c.description, c.image_url, c.claimed_by, c.escalation_flag, c.created_at, c.updated_at,
+            u1.email as author_email, u2.email as claimer_email
+     from complaints c
+     join users u1 on c.author_id = u1.id
+     left join users u2 on c.claimed_by = u2.id
+     where c.id = $1`,
     [id]
   );
   return r.rows[0] ?? null;
@@ -293,7 +292,7 @@ export async function getComplaintTimeline(complaintId: number): Promise<Timelin
   if (!complaint) return [];
 
   const updatesRes = await pool.query<ComplaintUpdateRow>(
-    `select * from complaint_updates where complaint_id = $1 order by created_at asc`,
+    `select id, complaint_id, message, author_role, created_at::timestamptz from complaint_updates where complaint_id = $1 order by created_at asc`,
     [complaintId]
   );
   const updates = updatesRes.rows;
@@ -337,6 +336,6 @@ export async function getComplaintTimeline(complaintId: number): Promise<Timelin
     });
   }
 
-  // Sort by time
+  // Sort by time ASC (Older to Newer)
   return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }

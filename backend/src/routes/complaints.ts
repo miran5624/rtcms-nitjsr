@@ -104,13 +104,14 @@ export function registerComplaintRoutes(router: Router): void {
       res.status(404).json({ error: 'complaint not found' });
       return;
     }
-    if (
-      req.user.role === 'admin' &&
-      !departmentMatchesCategory(req.user.department, complaint.category)
-    ) {
-      res.status(403).json({ error: 'department does not match complaint category' });
-      return;
-    }
+    // Department check removed for Open Access
+    // if (
+    //   req.user.role === 'admin' &&
+    //   !departmentMatchesCategory(req.user.department, complaint.category)
+    // ) {
+    //   res.status(403).json({ error: 'department does not match complaint category' });
+    //   return;
+    // }
     const updated = await claimComplaint(id, req.user.id);
     if (!updated) {
       res.status(409).json({ error: 'Already claimed' });
@@ -214,6 +215,8 @@ function toComplaintResponse(row: {
   escalation_flag: boolean;
   created_at: Date;
   updated_at: Date;
+  author_email?: string;
+  claimer_email?: string | null;
 }) {
   return {
     id: row.id,
@@ -228,5 +231,7 @@ function toComplaintResponse(row: {
     escalation_flag: row.escalation_flag,
     created_at: row.created_at,
     updated_at: row.updated_at,
+    author_email: row.author_email,
+    claimer_email: row.claimer_email,
   };
 }

@@ -53,8 +53,8 @@ export function getComplaintsByStudent(studentId: string): Complaint[] {
 // get active complaint for student (only one allowed at a time)
 export function getActiveComplaint(studentId: string): Complaint | null {
   return global.complaintsStore.find(
-    c => c.studentId === studentId && 
-    !['resolved', 'closed'].includes(c.status)
+    c => c.studentId === studentId &&
+      !['resolved', 'closed'].includes(c.status)
   ) || null
 }
 
@@ -66,9 +66,9 @@ export function createComplaint(complaint: Omit<Complaint, 'id' | 'createdAt' | 
     createdAt: new Date(),
     updatedAt: new Date()
   }
-  
+
   global.complaintsStore.push(newComplaint)
-  
+
   // add activity log
   addActivityLog({
     complaintId: newComplaint.id,
@@ -78,30 +78,30 @@ export function createComplaint(complaint: Omit<Complaint, 'id' | 'createdAt' | 
     performedByRole: 'student',
     remarks: `New complaint filed under ${complaint.category} category`
   })
-  
+
   notifyListeners()
   return newComplaint
 }
 
 // update complaint
 export function updateComplaint(
-  id: string, 
+  id: string,
   updates: Partial<Complaint>,
   updatedBy: User,
   remarks?: string
 ): Complaint | null {
   const index = global.complaintsStore.findIndex(c => c.id === id)
   if (index === -1) return null
-  
+
   const oldComplaint = global.complaintsStore[index]
   const updatedComplaint = {
     ...oldComplaint,
     ...updates,
     updatedAt: new Date()
   }
-  
+
   global.complaintsStore[index] = updatedComplaint
-  
+
   // log activity
   let action = 'Complaint Updated'
   if (updates.status && updates.status !== oldComplaint.status) {
@@ -110,7 +110,7 @@ export function updateComplaint(
   if (updates.claimedBy && !oldComplaint.claimedBy) {
     action = 'Complaint Claimed'
   }
-  
+
   addActivityLog({
     complaintId: id,
     action,
@@ -119,7 +119,7 @@ export function updateComplaint(
     performedByRole: updatedBy.role,
     remarks: remarks || null
   })
-  
+
   notifyListeners()
   return updatedComplaint
 }
@@ -128,7 +128,7 @@ export function updateComplaint(
 export function claimComplaint(complaintId: string, admin: User): Complaint | null {
   const complaint = getComplaintById(complaintId)
   if (!complaint || complaint.claimedBy) return null
-  
+
   return updateComplaint(
     complaintId,
     {
@@ -159,7 +159,7 @@ export function addActivityLog(log: Omit<ActivityLog, 'id' | 'timestamp'>): Acti
     id: crypto.randomUUID(),
     timestamp: new Date()
   }
-  
+
   global.activityStore.push(newLog)
   notifyListeners()
   return newLog
@@ -184,16 +184,16 @@ export function addFeedback(complaintId: string, feedback: {
 }): boolean {
   const index = global.complaintsStore.findIndex(c => c.id === complaintId)
   if (index === -1) return false
-  
+
   const complaint = global.complaintsStore[index]
   const existingFeedback = complaint.feedback || []
-  
+
   global.complaintsStore[index] = {
     ...complaint,
     feedback: [...existingFeedback, feedback],
     updatedAt: new Date()
   }
-  
+
   notifyListeners()
   return true
 }
@@ -218,7 +218,7 @@ export function getAnalytics() {
   const complaints = getAllComplaints()
   const resolved = complaints.filter(c => c.status === 'resolved')
   const escalated = getEscalatedComplaints()
-  
+
   // avg resolution time in hours
   let avgResolutionTime = 0
   if (resolved.length > 0) {
@@ -230,19 +230,19 @@ export function getAnalytics() {
     }, 0)
     avgResolutionTime = Math.round(totalTime / resolved.length / (1000 * 60 * 60))
   }
-  
+
   // complaints by category
   const byCategory = complaints.reduce((acc, c) => {
     acc[c.category] = (acc[c.category] || 0) + 1
     return acc
   }, {} as Record<string, number>)
-  
+
   // complaints by status
   const byStatus = complaints.reduce((acc, c) => {
     acc[c.status] = (acc[c.status] || 0) + 1
     return acc
   }, {} as Record<string, number>)
-  
+
   return {
     total: complaints.length,
     pending: complaints.filter(c => c.status === 'pending').length,
@@ -257,74 +257,19 @@ export function getAnalytics() {
 // seed demo data
 export function seedDemoData() {
   if (global.complaintsStore.length > 0) return
-  
+
+  // Demo data disabled
+  const demoComplaints: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt'>[] = []
+
+  /*
   const demoComplaints: Omit<Complaint, 'id' | 'createdAt' | 'updatedAt'>[] = [
-    {
-      studentId: 'demo-student-1',
-      studentEmail: '2024ugcs001@nitjsr.ac.in',
-      studentName: '2024ugcs001',
-      category: 'hostel',
-      title: 'Water supply issue in Block A',
-      description: 'There has been no water supply in Block A Room 201 for the past 2 days.',
-      status: 'pending',
-      claimedBy: null,
-      claimedByEmail: null,
-      claimedAt: null,
-      resolvedAt: null
-    },
-    {
-      studentId: 'demo-student-2',
-      studentEmail: '2024ugec042@nitjsr.ac.in',
-      studentName: '2024ugec042',
-      category: 'mess',
-      title: 'Food quality concerns',
-      description: 'The quality of food served in the mess has deteriorated significantly.',
-      status: 'claimed',
-      claimedBy: 'demo-admin-1',
-      claimedByEmail: 'warden@nitjsr.ac.in',
-      claimedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      resolvedAt: null
-    },
-    {
-      studentId: 'demo-student-3',
-      studentEmail: '2023ugme015@nitjsr.ac.in',
-      studentName: '2023ugme015',
-      category: 'internet',
-      title: 'WiFi connectivity issues',
-      description: 'WiFi has been extremely slow in the library for the past week.',
-      status: 'pending',
-      claimedBy: null,
-      claimedByEmail: null,
-      claimedAt: null,
-      resolvedAt: null
-    }
+    // ... removed ...
   ]
   
-  // create complaints with staggered timestamps
   demoComplaints.forEach((complaint, index) => {
-    const hoursAgo = index * 12 + Math.random() * 24
-    const created = new Date(Date.now() - hoursAgo * 60 * 60 * 1000)
-    
-    const newComplaint: Complaint = {
-      ...complaint,
-      id: crypto.randomUUID(),
-      createdAt: created,
-      updatedAt: created
-    }
-    
-    global.complaintsStore.push(newComplaint)
-    
-    global.activityStore.push({
-      id: crypto.randomUUID(),
-      complaintId: newComplaint.id,
-      action: 'Complaint Created',
-      performedBy: complaint.studentId,
-      performedByEmail: complaint.studentEmail,
-      performedByRole: 'student',
-      remarks: `New complaint filed under ${complaint.category} category`,
-      timestamp: created
-    })
+    // ... removed ...
   })
-  
+  */
+
   notifyListeners()
 }

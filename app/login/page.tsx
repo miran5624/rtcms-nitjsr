@@ -59,7 +59,11 @@ export default function LoginPage() {
 
       const token = data.token
       const payload = parseJwtPayload(token)
-      const role = payload.role || 'student'
+
+      // If department is superadmin, enforce super_admin role (fixes legacy tokens)
+      const role = (payload.department === 'superadmin' || payload.role === 'super_admin')
+        ? 'super_admin'
+        : (payload.role || 'student')
       const user = {
         id: String(payload.userId ?? payload.sub ?? ''),
         email: payload.email ?? email.toLowerCase(),
@@ -83,11 +87,11 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <Header showAuthButtons={false} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* left side - welcome content */}
@@ -96,11 +100,11 @@ export default function LoginPage() {
               Welcome to the Complaint Management Portal
             </h2>
             <p className="mb-6 text-muted-foreground">
-              This portal allows students, faculty, and staff to raise and track 
-              complaints related to hostel facilities, mess services, academic issues, 
+              This portal allows students, faculty, and staff to raise and track
+              complaints related to hostel facilities, mess services, academic issues,
               and campus infrastructure.
             </p>
-            
+
             <div className="space-y-4 text-sm text-muted-foreground">
               <div className="flex items-start gap-3">
                 <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
@@ -115,10 +119,10 @@ export default function LoginPage() {
                 <p>Super Admins have complete oversight with analytics and escalation tracking</p>
               </div>
             </div>
-            
+
             {/* insert welcome text, carousel, or university announcements here */}
           </div>
-          
+
           {/* right side - login card */}
           <div className="w-full lg:w-[400px]">
             <Card className="border-t-4 border-t-primary shadow-md">
@@ -136,7 +140,7 @@ export default function LoginPage() {
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       Email Address
@@ -154,7 +158,7 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-sm font-medium">
                       Password
@@ -172,9 +176,9 @@ export default function LoginPage() {
                       />
                     </div>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                     disabled={loading}
                   >
@@ -188,17 +192,17 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </form>
-                
+
                 <div className="mt-4 text-center text-xs text-muted-foreground">
                   <p>Use your institute email to determine access level</p>
                   <p className="mt-1">Students: 202XXXXXXXX@nitjsr.ac.in</p>
                 </div>
-                
+
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground">
                     {"Don't have an account? "}
-                    <Link 
-                      href="/signup" 
+                    <Link
+                      href="/signup"
                       className="font-medium text-primary underline-offset-4 hover:underline"
                     >
                       Sign up

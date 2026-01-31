@@ -9,18 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  getEscalatedComplaints,
-  subscribe,
-  seedDemoData 
-} from '@/lib/store'
-import { 
-  categoryLabels, 
-  statusConfig, 
-  getTimeElapsed 
+import { api } from '@/lib/services/api'
+import { mapApiComplaintToFrontend, type ApiComplaint } from '@/lib/types'
+import {
+  categoryLabels,
+  statusConfig,
+  getTimeElapsed
 } from '@/lib/types'
 import type { Complaint } from '@/lib/types'
-import { 
+import {
   ArrowLeft,
   AlertTriangle,
   Clock,
@@ -33,28 +30,35 @@ export default function EscalationsPage() {
   const { user, loading } = useAuth('super_admin')
   const [escalated, setEscalated] = useState<Complaint[]>([])
   const [refreshing, setRefreshing] = useState(false)
-  
-  const loadData = () => {
-    seedDemoData()
-    setEscalated(getEscalatedComplaints())
+
+  const loadData = async () => {
+    try {
+      const { data } = await api.get<ApiComplaint[]>('/complaints')
+      const list = Array.isArray(data) ? data : []
+      const mapped = list.map(c => mapApiComplaintToFrontend(c))
+
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      const escalationList = mapped.filter(
+        c => new Date(c.createdAt) < dayAgo && !['resolved', 'closed', 'rejected'].includes(c.status)
+      )
+
+      setEscalated(escalationList)
+    } catch (error) {
+      console.error('Failed to fetch complaints', error)
+      setEscalated([])
+    }
   }
-  
+
   useEffect(() => {
-    loadData()
-    
-    const unsubscribe = subscribe(() => {
-      loadData()
-    })
-    
-    return () => unsubscribe()
-  }, [])
-  
-  const handleRefresh = () => {
+    if (user) loadData()
+  }, [user])
+
+  const handleRefresh = async () => {
     setRefreshing(true)
-    loadData()
+    await loadData()
     setTimeout(() => setRefreshing(false), 500)
   }
-  
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -62,11 +66,11 @@ export default function EscalationsPage() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <DashboardHeader user={user} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -83,10 +87,10 @@ export default function EscalationsPage() {
               </p>
             </div>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             className="gap-2 bg-transparent"
           >
@@ -94,18 +98,18 @@ export default function EscalationsPage() {
             Refresh
           </Button>
         </div>
-        
+
         {/* warning banner */}
         {escalated.length > 0 && (
           <Alert className="mb-6 border-destructive/30 bg-destructive/5">
             <AlertTriangle className="h-4 w-4 text-destructive" />
             <AlertDescription className="text-destructive">
-              <strong>{escalated.length} complaint{escalated.length !== 1 ? 's' : ''}</strong> {escalated.length !== 1 ? 'have' : 'has'} been 
+              <strong>{escalated.length} complaint{escalated.length !== 1 ? 's' : ''}</strong> {escalated.length !== 1 ? 'have' : 'has'} been
               pending for more than 24 hours and require{escalated.length === 1 ? 's' : ''} immediate attention.
             </AlertDescription>
           </Alert>
         )}
-        
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -134,8 +138,8 @@ export default function EscalationsPage() {
                   </thead>
                   <tbody>
                     {escalated.map(complaint => (
-                      <tr 
-                        key={complaint.id} 
+                      <tr
+                        key={complaint.id}
                         className="border-b border-destructive/20 bg-destructive/5 last:border-0"
                       >
                         <td className="py-3 pr-4 text-xs font-mono text-muted-foreground">
@@ -151,8 +155,8 @@ export default function EscalationsPage() {
                           {categoryLabels[complaint.category]}
                         </td>
                         <td className="py-3 pr-4">
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={statusConfig[complaint.status].color}
                           >
                             {statusConfig[complaint.status].label}
@@ -174,9 +178,9 @@ export default function EscalationsPage() {
                         </td>
                         <td className="py-3">
                           <Link href={`/super-admin/complaint/${complaint.id}`}>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
+                            <Button
+                              size="sm"
+                              variant="outline"
                               className="gap-1 border-destructive text-destructive hover:bg-destructive/10 bg-transparent"
                             >
                               View
@@ -202,7 +206,7 @@ export default function EscalationsPage() {
             )}
           </CardContent>
         </Card>
-        
+
         {/* info card */}
         <Card className="mt-6">
           <CardContent className="py-4">
@@ -211,7 +215,7 @@ export default function EscalationsPage() {
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">Escalation Policy</p>
                 <p className="mt-1">
-                  Complaints are automatically flagged as escalated when they remain unresolved 
+                  Complaints are automatically flagged as escalated when they remain unresolved
                   for more than 24 hours. This helps ensure timely resolution and accountability.
                 </p>
               </div>
