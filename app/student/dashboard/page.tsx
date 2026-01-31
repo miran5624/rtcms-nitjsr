@@ -1,0 +1,294 @@
+'use client'
+
+// student dashboard - view complaints and status
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { DashboardHeader } from '@/components/layout/dashboard-header'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useAuth } from '@/hooks/use-auth'
+import { 
+  getActiveComplaint, 
+  getComplaintsByStudent, 
+  getActivityLogs,
+  subscribe,
+  seedDemoData 
+} from '@/lib/store'
+import { 
+  categoryLabels, 
+  statusConfig, 
+  getTimeElapsed 
+} from '@/lib/types'
+import type { Complaint, ActivityLog } from '@/lib/types'
+import { 
+  Plus, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle, 
+  FileText,
+  RefreshCw
+} from 'lucide-react'
+
+export default function StudentDashboard() {
+  const { user, loading } = useAuth('student')
+  const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null)
+  const [history, setHistory] = useState<Complaint[]>([])
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
+  const [refreshing, setRefreshing] = useState(false)
+  
+  // load complaints
+  const loadData = () => {
+    if (!user) return
+    
+    // seed demo data on first load
+    seedDemoData()
+    
+    const active = getActiveComplaint(user.id)
+    setActiveComplaint(active)
+    
+    if (active) {
+      setActivityLogs(getActivityLogs(active.id))
+    }
+    
+    const all = getComplaintsByStudent(user.id)
+    setHistory(all.filter(c => ['resolved', 'closed'].includes(c.status)))
+  }
+  
+  useEffect(() => {
+    loadData()
+    
+    // subscribe to real-time updates
+    const unsubscribe = subscribe(() => {
+      loadData()
+    })
+    
+    return () => unsubscribe()
+  }, [user])
+  
+  const handleRefresh = () => {
+    setRefreshing(true)
+    loadData()
+    setTimeout(() => setRefreshing(false), 500)
+  }
+  
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+  
+  return (
+    <div className="min-h-screen bg-secondary">
+      <DashboardHeader user={user} />
+      
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-primary">Student Dashboard</h2>
+            <p className="text-sm text-muted-foreground">
+              View and track your complaints
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              className="gap-2 bg-transparent"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            
+            {!activeComplaint && (
+              <Link href="/student/new-complaint">
+                <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Plus className="h-4 w-4" />
+                  New Complaint
+                </Button>
+              </Link>
+            )}
+          </div>
+        </div>
+        
+        {/* active complaint warning */}
+        {activeComplaint && (
+          <Alert className="mb-6 border-primary/30 bg-primary/5">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-primary">
+              You have an active complaint in progress. You cannot file a new complaint until this one is resolved.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* current complaint */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Current Complaint
+                </CardTitle>
+                <CardDescription>
+                  {activeComplaint 
+                    ? 'Your complaint is being tracked below'
+                    : 'No active complaint at the moment'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {activeComplaint ? (
+                  <div className="space-y-4">
+                    {/* complaint details */}
+                    <div className="rounded-lg border border-border bg-card p-4">
+                      <div className="mb-3 flex items-start justify-between">
+                        <div>
+                          <h4 className="font-medium text-foreground">
+                            {activeComplaint.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {categoryLabels[activeComplaint.category]}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={statusConfig[activeComplaint.status].color}
+                        >
+                          {statusConfig[activeComplaint.status].label}
+                        </Badge>
+                      </div>
+                      
+                      <p className="mb-3 text-sm text-muted-foreground">
+                        {activeComplaint.description}
+                      </p>
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Filed {getTimeElapsed(new Date(activeComplaint.createdAt)).text}
+                        </span>
+                        {activeComplaint.claimedByEmail && (
+                          <span>
+                            Assigned to: {activeComplaint.claimedByEmail}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* activity timeline */}
+                    <div>
+                      <h5 className="mb-3 font-medium text-foreground">Activity Timeline</h5>
+                      <div className="space-y-3">
+                        {activityLogs.map((log, index) => (
+                          <div 
+                            key={log.id} 
+                            className="flex gap-3"
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className={`h-3 w-3 rounded-full ${
+                                index === 0 ? 'bg-primary' : 'bg-muted-foreground/30'
+                              }`} />
+                              {index < activityLogs.length - 1 && (
+                                <div className="h-full w-px bg-border" />
+                              )}
+                            </div>
+                            <div className="flex-1 pb-4">
+                              <p className="text-sm font-medium text-foreground">
+                                {log.action}
+                              </p>
+                              {log.remarks && (
+                                <p className="text-xs text-muted-foreground">
+                                  {log.remarks}
+                                </p>
+                              )}
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {new Date(log.timestamp).toLocaleString()} by {log.performedByEmail}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+                    <p className="mb-4 text-muted-foreground">
+                      You have no active complaints.
+                    </p>
+                    <Link href="/student/new-complaint">
+                      <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Plus className="h-4 w-4" />
+                        File a New Complaint
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* sidebar - history */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  Complaint History
+                </CardTitle>
+                <CardDescription>
+                  Previously resolved complaints
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {history.length > 0 ? (
+                  <div className="space-y-3">
+                    {history.map(complaint => (
+                      <div 
+                        key={complaint.id}
+                        className="rounded-lg border border-border p-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">
+                              {complaint.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {categoryLabels[complaint.category]}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={statusConfig[complaint.status].color}
+                          >
+                            {statusConfig[complaint.status].label}
+                          </Badge>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Resolved {complaint.resolvedAt 
+                            ? new Date(complaint.resolvedAt).toLocaleDateString() 
+                            : 'N/A'
+                          }
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    No resolved complaints yet.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
