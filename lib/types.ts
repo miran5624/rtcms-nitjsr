@@ -148,12 +148,12 @@ export function mapApiComplaintToFrontend(api: ApiComplaint, currentUserEmail?: 
 
 // status labels and colors
 export const statusConfig: Record<ComplaintStatus, { label: string; color: string }> = {
-  pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-  open: { label: 'Open', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-  claimed: { label: 'Claimed', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-  in_progress: { label: 'In Progress', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
-  resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800 border-green-300' },
-  escalated: { label: 'Escalated', color: 'bg-red-100 text-red-800 border-red-300' },
-  closed: { label: 'Closed', color: 'bg-gray-100 text-gray-800 border-gray-300' },
-  rejected: { label: 'Rejected', color: 'bg-red-50 text-red-600 border-red-200' }
+  pending: { label: 'Pending', color: 'font-bold bg-transparent' },
+  open: { label: 'Open', color: 'font-bold bg-transparent' },
+  claimed: { label: 'Claimed', color: 'font-bold bg-transparent' },
+  in_progress: { label: 'In Progress', color: 'font-bold bg-transparent' },
+  resolved: { label: 'Resolved', color: 'font-bold bg-transparent' },
+  escalated: { label: 'Escalated', color: 'font-bold bg-transparent' },
+  closed: { label: 'Closed', color: 'font-bold bg-transparent' },
+  rejected: { label: 'Rejected', color: 'font-bold bg-transparent' }
 }

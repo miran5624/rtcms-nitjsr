@@ -82,23 +82,22 @@ export default function HomePage() {
 
       <main>
         {/* hero section with faq topic nav */}
-        <section className="bg-secondary py-16">
+        <section className="bg-secondary py-45">
           <div className="container mx-auto px-4">
-            <div className="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:justify-between">
               {/* hero content - left */}
               <div className="flex-1 lg:max-w-xl">
                 <h2 className="mb-4 font-serif text-3xl font-bold text-primary md:text-4xl">
                   Smart Complaint Management System
                 </h2>
                 <p className="mb-8 text-lg text-muted-foreground">
-                  A streamlined platform for students and staff to raise, track, and resolve
-                  campus-related complaints efficiently.
+                  Your GPA might be beyond repair, but your hostel fan doesn't have to be, so stop waiting, start stating
                 </p>
                 <div className="flex flex-col items-start gap-4 sm:flex-row">
                   <Link href="/signup">
                     <Button size="lg" className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                      Login
-                      <ArrowRight className="h-4 w-4" />
+                      Sign Up
+
                     </Button>
                   </Link>
                   {/* <Button variant="ghost">Learn More</Button> */}
@@ -109,6 +108,9 @@ export default function HomePage() {
                   </Link>
                 </div>
               </div>
+
+              {/* vertical separator */}
+              <div className="hidden w-[3px] bg-[#184675] rounded-full lg:block" />
 
               {/* faq topic nav - right */}
               <div className="lg:w-64">

@@ -20,6 +20,13 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     router.push('/login')
   }
 
+  const handleLogoClick = () => {
+    if (user?.role === 'student') router.push('/student/dashboard')
+    else if (user?.role === 'admin') router.push('/admin/dashboard')
+    else if (user?.role === 'super_admin') router.push('/super-admin/dashboard')
+    else router.push('/')
+  }
+
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'student': return 'Student'
@@ -36,7 +43,10 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* logo */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center cursor-pointer"
+              onClick={handleLogoClick}
+            >
               <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
 
@@ -48,6 +58,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               <p className="text-xs text-muted-foreground">
                 Complaint Management System
               </p>
+            </div>
+
+            {/* additional logos */}
+            <div className="flex items-center gap-2">
+              <img src="/logo2.png" alt="Logo 2" className="h-10 w-auto object-contain" />
+              <img src="/logo3.png" alt="Logo 3" className="h-10 w-auto object-contain" />
             </div>
           </div>
 

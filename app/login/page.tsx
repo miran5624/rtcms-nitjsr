@@ -90,13 +90,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-secondary">
+    <div className="min-h-screen flex flex-col bg-secondary">
       <Header showAuthButtons={false} />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex flex-col gap-8 lg:flex-row">
+      <main className="flex-1 flex items-center justify-center container mx-auto px-4 py-8">
+        <div className="flex flex-col gap-8 lg:flex-row w-full max-w-5xl">
           {/* left side - welcome content */}
-          <div className="flex-1 rounded-lg bg-muted p-8">
+          <div className="flex-1 flex flex-col justify-center rounded-lg bg-muted p-8">
             <h2 className="mb-4 font-serif text-2xl font-bold text-primary">
               Welcome to the Complaint Management Portal
             </h2>

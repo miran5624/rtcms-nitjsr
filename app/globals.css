@@ -5,22 +5,22 @@
 
 :root {
   /* nit jamshedpur institutional theme - navy blue and white */
-  --background: #ffffff;
+  --background: #FFFDF5;
   --foreground: #1a1a1a;
-  --card: #ffffff;
+  --card: #FFFDF5;
   --card-foreground: #1a1a1a;
-  --popover: #ffffff;
+  --popover: #FFFDF5;
   --popover-foreground: #1a1a1a;
   --primary: #003366;
-  --primary-foreground: #ffffff;
-  --secondary: #f8f9fa;
+  --primary-foreground: #FFFDF5;
+  --secondary: #FFFDF5;
   --secondary-foreground: #003366;
   --muted: #f1f3f5;
   --muted-foreground: #6b7280;
   --accent: #e9ecef;
   --accent-foreground: #003366;
   --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
+  --destructive-foreground: #FFFDF5;
   --border: #dee2e6;
   --input: #dee2e6;
   --ring: #003366;
@@ -31,38 +31,38 @@
   --chart-5: #dc2626;
   --radius: 0.5rem;
   --sidebar: #003366;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
+  --sidebar-foreground: #FFFDF5;
+  --sidebar-primary: #FFFDF5;
   --sidebar-primary-foreground: #003366;
   --sidebar-accent: #004488;
-  --sidebar-accent-foreground: #ffffff;
+  --sidebar-accent-foreground: #FFFDF5;
   --sidebar-border: #004488;
-  --sidebar-ring: #ffffff;
+  --sidebar-ring: #FFFDF5;
   /* additional semantic colors */
   --warning: #f59e0b;
-  --warning-foreground: #ffffff;
+  --warning-foreground: #FFFDF5;
   --success: #10b981;
-  --success-foreground: #ffffff;
+  --success-foreground: #FFFDF5;
 }
 
 /* dark mode disabled - keeping institutional light theme only */
 .dark {
-  --background: #ffffff;
+  --background: #FFFDF5;
   --foreground: #1a1a1a;
-  --card: #ffffff;
+  --card: #FFFDF5;
   --card-foreground: #1a1a1a;
-  --popover: #ffffff;
+  --popover: #FFFDF5;
   --popover-foreground: #1a1a1a;
   --primary: #003366;
-  --primary-foreground: #ffffff;
-  --secondary: #f8f9fa;
+  --primary-foreground: #FFFDF5;
+  --secondary: #FFFDF5;
   --secondary-foreground: #003366;
   --muted: #f1f3f5;
   --muted-foreground: #6b7280;
   --accent: #e9ecef;
   --accent-foreground: #003366;
   --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
+  --destructive-foreground: #FFFDF5;
   --border: #dee2e6;
   --input: #dee2e6;
   --ring: #003366;
@@ -72,17 +72,17 @@
   --chart-4: #10b981;
   --chart-5: #dc2626;
   --sidebar: #003366;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
+  --sidebar-foreground: #FFFDF5;
+  --sidebar-primary: #FFFDF5;
   --sidebar-primary-foreground: #003366;
   --sidebar-accent: #004488;
-  --sidebar-accent-foreground: #ffffff;
+  --sidebar-accent-foreground: #FFFDF5;
   --sidebar-border: #004488;
-  --sidebar-ring: #ffffff;
+  --sidebar-ring: #FFFDF5;
   --warning: #f59e0b;
-  --warning-foreground: #ffffff;
+  --warning-foreground: #FFFDF5;
   --success: #10b981;
-  --success-foreground: #ffffff;
+  --success-foreground: #FFFDF5;
 }
 
 @theme inline {
@@ -135,6 +135,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

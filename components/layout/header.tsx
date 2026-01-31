@@ -2,6 +2,7 @@
 
 // institutional header for nit jamshedpur
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { GraduationCap } from 'lucide-react'
 
 interface HeaderProps {
@@ -9,13 +10,35 @@ interface HeaderProps {
 }
 
 export function Header({ showAuthButtons = true }: HeaderProps) {
+  const router = useRouter()
+
+  const handleLogoClick = () => {
+    const userStr = sessionStorage.getItem('user')
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        if (user.role === 'student') router.push('/student/dashboard')
+        else if (user.role === 'admin') router.push('/admin/dashboard')
+        else if (user.role === 'super_admin') router.push('/super-admin/dashboard')
+        else router.push('/')
+      } catch (e) {
+        router.push('/')
+      }
+    } else {
+      router.push('/')
+    }
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background shadow-sm">
       {/* main header with logo and title */}
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center">
           {/* logo - left aligned */}
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center cursor-pointer"
+            onClick={handleLogoClick}
+          >
             <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
 
@@ -30,7 +53,11 @@ export function Header({ showAuthButtons = true }: HeaderProps) {
           </div>
 
           {/* spacer to balance layout */}
-          <div className="hidden w-14 shrink-0 md:block" />
+          {/* additional logos - right aligned */}
+          <div className="hidden shrink-0 items-center justify-end gap-2 md:flex">
+            <img src="/logo2.png" alt="Logo 2" className="h-12 w-auto object-contain" />
+            <img src="/logo3.png" alt="Logo 3" className="h-12 w-auto object-contain" />
+          </div>
         </div>
       </div>
 

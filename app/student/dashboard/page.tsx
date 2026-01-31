@@ -112,10 +112,10 @@ export default function StudentDashboard() {
 
         {/* active complaint warning */}
         {activeComplaint && (
-          <Alert className="mb-6 border-primary/30 bg-primary/5">
-            <AlertCircle className="h-4 w-4 text-primary" />
+          <Alert className="mb-6 border-none bg-primary/5">
+
             <AlertDescription className="text-primary">
-              You have an active complaint in progress. You cannot file a new complaint until this one is resolved.
+              Active complaint in progress. You cannot file a new complaint until this one is resolved.
             </AlertDescription>
           </Alert>
         )}
@@ -126,7 +126,7 @@ export default function StudentDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText className="h-5 w-5 text-primary" />
+
                   Current Complaint
                 </CardTitle>
                 <CardDescription>
@@ -189,7 +189,7 @@ export default function StudentDashboard() {
                         className="gap-2"
                         onClick={() => setTimelineId(activeComplaint.id)}
                       >
-                        <Activity className="h-4 w-4 text-primary" />
+
                         Track Status
                       </Button>
                     </div>
@@ -217,7 +217,7 @@ export default function StudentDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <CheckCircle className="h-5 w-5 text-primary" />
+
                   Complaint History
                 </CardTitle>
                 <CardDescription>
