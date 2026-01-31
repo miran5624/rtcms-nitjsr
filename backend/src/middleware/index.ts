@@ -1,1 +1,1 @@
-export { authMiddleware, optionalAuth, type JwtPayload } from './auth.js';
+export { authMiddleware, optionalAuth, type JwtPayload, type RequestUser } from './auth.js';

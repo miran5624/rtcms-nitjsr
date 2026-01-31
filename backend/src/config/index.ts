@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const superAdminEmailsRaw = process.env.SUPER_ADMIN_EMAILS ?? '';
 export const config = {
   port: parseInt(process.env.PORT ?? '4000', 10),
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -12,4 +13,8 @@ export const config = {
   database: {
     url: process.env.DATABASE_URL ?? 'postgresql://localhost:5432/complaint_portal',
   },
+  superAdminEmails: superAdminEmailsRaw
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
 } as const;

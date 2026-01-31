@@ -3,24 +3,29 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 
 export interface JwtPayload {
-  sub: string;
+  sub?: string;
+  userId?: number;
+  email?: string;
   role?: string;
+  department?: string;
   iat?: number;
   exp?: number;
+}
+
+export interface RequestUser {
+  id: number;
+  role: string;
+  department: string;
 }
 
 declare global {
   namespace Express {
     interface Request {
-      user?: JwtPayload;
+      user?: RequestUser;
     }
   }
 }
 
-/**
- * JWT authentication middleware.
- * Verifies Bearer token and attaches decoded payload to req.user.
- */
 export function authMiddleware(
   req: Request,
   res: Response,
@@ -36,16 +41,18 @@ export function authMiddleware(
 
   try {
     const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
-    req.user = decoded;
+    const id = decoded.userId ?? (decoded.sub ? parseInt(decoded.sub, 10) : 0);
+    req.user = {
+      id: Number.isInteger(id) ? id : 0,
+      role: decoded.role ?? '',
+      department: decoded.department ?? '',
+    };
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
 
-/**
- * Optional auth: attaches user if token present, does not reject if missing.
- */
 export function optionalAuth(
   req: Request,
   res: Response,
@@ -61,9 +68,14 @@ export function optionalAuth(
 
   try {
     const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
-    req.user = decoded;
+    const id = decoded.userId ?? (decoded.sub ? parseInt(decoded.sub, 10) : 0);
+    req.user = {
+      id: Number.isInteger(id) ? id : 0,
+      role: decoded.role ?? '',
+      department: decoded.department ?? '',
+    };
   } catch {
-    // ignore invalid token for optional auth
+    // no token or invalid
   }
   next();
 }

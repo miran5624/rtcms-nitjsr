@@ -1,9 +1,11 @@
 -- complaint management system schema
-
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
 create type user_role as enum ('student', 'admin', 'super_admin');
 
 create type complaint_category as enum (
-  'academic', 'hostel', 'infrastructure', 'finance', 'other'
+  'academic', 'hostel', 'infrastructure','mess',             
+  'internet', 'finance', 'other'
 );
 
 create type complaint_status as enum (
