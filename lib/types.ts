@@ -24,6 +24,7 @@ export interface User {
   email: string
   name: string
   role: UserRole
+  department?: string
   createdAt: Date
 }
 
@@ -44,6 +45,7 @@ export interface Complaint {
   resolvedAt: Date | null
   feedback?: Feedback[]
   attachments?: string[]
+  imageUrl?: string | null
   priority?: 'low' | 'medium' | 'high'
   assignedTo?: string
   assignedToName?: string
@@ -133,6 +135,7 @@ export function mapApiComplaintToFrontend(api: ApiComplaint, currentUserEmail?: 
     claimedBy: api.claimed_by ? String(api.claimed_by) : null,
     claimedByEmail: null,
     claimedAt: null,
+    imageUrl: api.image_url,
     createdAt: new Date(api.created_at),
     updatedAt: new Date(api.updated_at),
     resolvedAt: ['resolved', 'closed'].includes(api.status) ? new Date(api.updated_at) : null,

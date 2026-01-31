@@ -9,21 +9,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  getComplaintById, 
+import {
+  getComplaintById,
   getActivityLogs,
-  subscribe 
+  subscribe
 } from '@/lib/store'
-import { 
-  categoryLabels, 
-  statusConfig, 
+import {
+  categoryLabels,
+  statusConfig,
   getTimeElapsed,
-  getUrgencyLevel 
+  getUrgencyLevel
 } from '@/lib/types'
 import type { Complaint, ActivityLog } from '@/lib/types'
-import { 
-  ArrowLeft, 
-  Clock, 
+import {
+  ArrowLeft,
+  Clock,
   User,
   AlertCircle,
   RefreshCw,
@@ -40,26 +40,26 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
   const { user, loading } = useAuth('super_admin')
   const [complaint, setComplaint] = useState<Complaint | null>(null)
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
-  
+
   const loadData = () => {
     const data = getComplaintById(id)
     setComplaint(data)
-    
+
     if (data) {
       setActivityLogs(getActivityLogs(data.id))
     }
   }
-  
+
   useEffect(() => {
     loadData()
-    
+
     const unsubscribe = subscribe(() => {
       loadData()
     })
-    
+
     return () => unsubscribe()
   }, [id])
-  
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -67,12 +67,12 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
       </div>
     )
   }
-  
+
   if (!complaint) {
     return (
       <div className="min-h-screen bg-secondary">
         <DashboardHeader user={user} />
-        
+
         <main className="container mx-auto px-4 py-8">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -80,7 +80,7 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
               Complaint not found.
             </AlertDescription>
           </Alert>
-          
+
           <div className="mt-4">
             <Link href="/super-admin/dashboard">
               <Button variant="outline" className="gap-2 bg-transparent">
@@ -93,13 +93,13 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
       </div>
     )
   }
-  
+
   const urgency = getUrgencyLevel(new Date(complaint.createdAt))
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <DashboardHeader user={user} />
-      
+
       <main className="container mx-auto px-4 py-8">
         {/* back button */}
         <Link href="/super-admin/dashboard" className="mb-6 inline-block">
@@ -108,7 +108,7 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
             Back to Dashboard
           </Button>
         </Link>
-        
+
         {/* urgency warning */}
         {urgency === 'critical' && (
           <Alert className="mb-6 border-destructive/30 bg-destructive/5">
@@ -118,7 +118,7 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
             </AlertDescription>
           </Alert>
         )}
-        
+
         <div className="grid gap-6 lg:grid-cols-3">
           {/* complaint details */}
           <div className="lg:col-span-2">
@@ -136,8 +136,8 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
                       {categoryLabels[complaint.category]} • ID: {complaint.id.slice(0, 8)}...
                     </CardDescription>
                   </div>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={statusConfig[complaint.status].color}
                   >
                     {statusConfig[complaint.status].label}
@@ -158,7 +158,7 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
                     Name: {complaint.studentName}
                   </p>
                 </div>
-                
+
                 {/* assigned admin */}
                 <div className="rounded-lg bg-muted p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
@@ -175,15 +175,15 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
                     </p>
                   )}
                 </div>
-                
+
                 {/* description */}
                 <div>
                   <h4 className="mb-2 font-medium text-foreground">Description</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground break-words break-all">
                     {complaint.description}
                   </p>
                 </div>
-                
+
                 {/* timestamps */}
                 <div className="rounded-lg border border-border p-4">
                   <h4 className="mb-3 font-medium text-foreground">Timeline</h4>
@@ -216,7 +216,7 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* resolved message */}
                 {['resolved', 'closed'].includes(complaint.status) && (
                   <div className="flex items-center gap-2 rounded-lg bg-green-50 p-4 text-green-700">
@@ -227,7 +227,7 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* activity timeline */}
           <div>
             <Card>
@@ -240,14 +240,13 @@ export default function SuperAdminComplaintPage({ params }: PageProps) {
               <CardContent>
                 <div className="space-y-4">
                   {activityLogs.map((log, index) => (
-                    <div 
-                      key={log.id} 
+                    <div
+                      key={log.id}
                       className="flex gap-3"
                     >
                       <div className="flex flex-col items-center">
-                        <div className={`h-3 w-3 rounded-full ${
-                          index === 0 ? 'bg-primary' : 'bg-muted-foreground/30'
-                        }`} />
+                        <div className={`h-3 w-3 rounded-full ${index === 0 ? 'bg-primary' : 'bg-muted-foreground/30'
+                          }`} />
                         {index < activityLogs.length - 1 && (
                           <div className="h-full w-px bg-border" />
                         )}

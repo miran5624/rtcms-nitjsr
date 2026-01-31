@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                         <div className="mb-2 flex items-start justify-between gap-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-foreground">
+                              <h4 className="font-medium text-foreground break-words break-all">
                                 {complaint.title}
                               </h4>
                               {urgency === 'critical' && (
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
                           </Badge>
                         </div>
 
-                        <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
+                        <p className="mb-3 text-sm text-muted-foreground line-clamp-2 break-words break-all">
                           {complaint.description}
                         </p>
 

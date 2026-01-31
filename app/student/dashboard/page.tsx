@@ -154,7 +154,7 @@ export default function StudentDashboard() {
                         </Badge>
                       </div>
 
-                      <p className="mb-3 text-sm text-muted-foreground">
+                      <p className="mb-3 text-sm text-muted-foreground break-words break-all">
                         {activeComplaint.description}
                       </p>
 

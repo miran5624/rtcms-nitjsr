@@ -110,7 +110,7 @@ export default function StudentComplaintDetailPage({
               <CardContent className="space-y-4">
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-2">Description</h4>
-                  <p className="text-foreground whitespace-pre-wrap">{complaint.description}</p>
+                  <p className="text-foreground whitespace-pre-wrap break-words break-all">{complaint.description}</p>
                 </div>
 
                 {complaint.attachments && complaint.attachments.length > 0 && (
@@ -145,11 +145,10 @@ export default function StudentComplaintDetailPage({
                     {complaint.feedback.map((fb) => (
                       <div
                         key={fb.id}
-                        className={`p-4 rounded-lg ${
-                          fb.userRole === "student"
+                        className={`p-4 rounded-lg ${fb.userRole === "student"
                             ? "bg-primary/5 border border-primary/10 ml-4"
                             : "bg-muted mr-4"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">

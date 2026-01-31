@@ -39,6 +39,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${robotoSerif.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground">
+        {/* Polyfill for 'global' error */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if (typeof window !== 'undefined' && typeof global === 'undefined') { window.global = window; }`
+          }}
+        />
         {children}
         <Toaster />
         <Analytics />

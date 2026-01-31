@@ -11,27 +11,29 @@ import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { api } from '@/lib/services/api'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  getComplaintById, 
+import {
+  getComplaintById,
   getActivityLogs,
   updateComplaint,
-  subscribe 
+  subscribe
 } from '@/lib/store'
-import { 
-  categoryLabels, 
-  statusConfig, 
-  getTimeElapsed 
+import {
+  categoryLabels,
+  statusConfig,
+  getTimeElapsed
 } from '@/lib/types'
 import type { Complaint, ActivityLog, ComplaintStatus } from '@/lib/types'
-import { 
-  ArrowLeft, 
-  Clock, 
+import {
+  ArrowLeft,
+  Clock,
   User,
   AlertCircle,
   RefreshCw,
   Loader2,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react'
 
 interface PageProps {
@@ -47,62 +49,105 @@ export default function ComplaintDetailPage({ params }: PageProps) {
   const [remarks, setRemarks] = useState('')
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState('')
-  
+
   // load complaint data
   const loadData = () => {
+    // Note: In production we should use API, but existing code uses store mock for GET
+    // We will stick to store for GET to maintain consistency with dashboard, 
+    // but implement the Access Check here as requested.
     const data = getComplaintById(id)
-    setComplaint(data)
-    
+
     if (data) {
+      // Access Check: Case-insensitive
+      if (user && user.department && user.role === 'admin') {
+        const userDept = user.department.toLowerCase()
+        // Special handling: 'other' department accesses 'others' category
+        // Also handle 'all' if that exists?
+        let complaintCat = data.category.toLowerCase()
+        if (complaintCat === 'others' && userDept === 'other') {
+          complaintCat = 'other'
+        }
+
+        // If generic admin (e.g. Dean) -> 'all'? 
+        // Assuming strict mapping as per user request: user.department !== complaint.category
+        // We allow if departments match OR if user is Super Admin (handled by useAuth('admin')?? No, super_admin has separate page)
+
+        // Fix for IT Admin: 'internet' vs 'Internet'
+        // We simply compare lowercased values.
+
+        // Note: If data.claimedBy === user.id, they should have access regardless?
+        // User request: "Update it to be case-insensitive: if (user.department?.toLowerCase() !== complaint.category?.toLowerCase())"
+
+        // Fix for IT Admin: 'internet' vs 'Internet / Network'
+        // Use includes() for partial matching (e.g. 'internet' in 'internet / network')
+        const canAccess = userDept === 'all' ||
+          complaintCat === userDept ||
+          complaintCat.includes(userDept) ||
+          data.claimedBy === user.id;
+
+        if (!canAccess) {
+          setComplaint(null)
+          setError("You do not have access to this complaint department.")
+          return
+        }
+      }
+
+      setComplaint(data)
       setActivityLogs(getActivityLogs(data.id))
+    } else {
+      setComplaint(null)
     }
   }
-  
+
   useEffect(() => {
-    loadData()
-    
-    const unsubscribe = subscribe(() => {
+    // Only load data when user is fully loaded to perform access check
+    if (!loading && user) {
       loadData()
+    }
+
+    const unsubscribe = subscribe(() => {
+      if (!loading && user) loadData()
     })
-    
+
     return () => unsubscribe()
-  }, [id])
-  
+  }, [id, loading, user]) // Add user dependency to re-check access
+
   const handleStatusUpdate = async (newStatus: ComplaintStatus) => {
     if (!user || !complaint) return
-    
+
     // verify admin owns this complaint
     if (complaint.claimedBy !== user.id) {
       setError('You cannot modify a complaint that is not claimed by you.')
       return
     }
-    
+
     setUpdating(true)
     setError('')
-    
-    // simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const updates: Partial<Complaint> = {
-      status: newStatus
-    }
-    
-    if (newStatus === 'resolved') {
-      updates.resolvedAt = new Date()
-    }
-    
-    updateComplaint(complaint.id, updates, user, remarks || undefined)
-    setRemarks('')
-    setUpdating(false)
-    
-    // if resolved, redirect back
-    if (newStatus === 'resolved' || newStatus === 'closed') {
-      setTimeout(() => {
-        router.push('/admin/dashboard')
-      }, 1000)
+
+    try {
+      await api.patch(`/complaints/${complaint.id}/status`, {
+        status: newStatus,
+        remarks: remarks || 'Fixed'
+      })
+
+      // reload complaint data
+      loadData()
+      setRemarks('')
+
+      // if resolved, redirect back
+      if (newStatus === 'resolved' || newStatus === 'closed') {
+        setTimeout(() => {
+          router.push('/admin/dashboard')
+        }, 1000)
+      }
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      console.error(err)
+      setError(err.response?.data?.error || 'Failed to update status')
+    } finally {
+      setUpdating(false)
     }
   }
-  
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -110,20 +155,20 @@ export default function ComplaintDetailPage({ params }: PageProps) {
       </div>
     )
   }
-  
+
   if (!complaint) {
     return (
       <div className="min-h-screen bg-secondary">
         <DashboardHeader user={user} />
-        
+
         <main className="container mx-auto px-4 py-8">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Complaint not found or you do not have access to view it.
+              {error || "Complaint not found or you do not have access to view it."}
             </AlertDescription>
           </Alert>
-          
+
           <div className="mt-4">
             <Link href="/admin/dashboard">
               <Button variant="outline" className="gap-2 bg-transparent">
@@ -136,14 +181,14 @@ export default function ComplaintDetailPage({ params }: PageProps) {
       </div>
     )
   }
-  
+
   const isOwner = complaint.claimedBy === user?.id
   const canModify = isOwner && !['resolved', 'closed'].includes(complaint.status)
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <DashboardHeader user={user} />
-      
+
       <main className="container mx-auto px-4 py-8">
         {/* back button */}
         <Link href="/admin/dashboard" className="mb-6 inline-block">
@@ -152,7 +197,7 @@ export default function ComplaintDetailPage({ params }: PageProps) {
             Back to Dashboard
           </Button>
         </Link>
-        
+
         <div className="grid gap-6 lg:grid-cols-3">
           {/* complaint details */}
           <div className="lg:col-span-2">
@@ -165,8 +210,8 @@ export default function ComplaintDetailPage({ params }: PageProps) {
                       {categoryLabels[complaint.category]} • ID: {complaint.id.slice(0, 8)}...
                     </CardDescription>
                   </div>
-                  <Badge 
-                    variant="outline" 
+                  <Badge
+                    variant="outline"
                     className={statusConfig[complaint.status].color}
                   >
                     {statusConfig[complaint.status].label}
@@ -178,21 +223,40 @@ export default function ComplaintDetailPage({ params }: PageProps) {
                 <div className="rounded-lg bg-muted p-4">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
                     <User className="h-4 w-4" />
-                    Student Information
+                    Assigned Admin
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Email: {complaint.studentEmail}
-                  </p>
+                  {complaint.claimedByEmail ? (
+                    <p className="text-sm text-muted-foreground">
+                      {complaint.claimedByEmail}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {['in_progress', 'resolved'].includes(complaint.status) ? 'Unknown (Legacy)' : 'Not yet assigned'}
+                    </p>
+                  )}
                 </div>
-                
+
                 {/* description */}
                 <div>
                   <h4 className="mb-2 font-medium text-foreground">Description</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground break-words break-all">
                     {complaint.description}
                   </p>
                 </div>
-                
+
+                {/* attached proof */}
+                {complaint.imageUrl && (
+                  <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+                    <h3 className="font-medium mb-2">Attached Proof</h3>
+                    {/* Use standard img tag for simplicity with external URLs */}
+                    <img
+                      src={complaint.imageUrl}
+                      alt="Complaint Proof"
+                      className="max-w-full h-auto rounded-md object-contain max-h-96"
+                    />
+                  </div>
+                )}
+
                 {/* timestamps */}
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -206,30 +270,30 @@ export default function ComplaintDetailPage({ params }: PageProps) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* ownership warning */}
                 {!isOwner && complaint.claimedBy && (
                   <Alert className="border-primary/30 bg-primary/5">
                     <AlertCircle className="h-4 w-4 text-primary" />
                     <AlertDescription className="text-primary">
-                      This complaint is claimed by {complaint.claimedByEmail}. 
+                      This complaint is claimed by {complaint.claimedByEmail}.
                       You cannot modify it.
                     </AlertDescription>
                   </Alert>
                 )}
-                
+
                 {/* status update section */}
                 {canModify && (
                   <div className="space-y-4 border-t border-border pt-6">
                     <h4 className="font-medium text-foreground">Update Status</h4>
-                    
+
                     {error && (
                       <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
                         <AlertDescription>{error}</AlertDescription>
                       </Alert>
                     )}
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="remarks">Remarks (optional)</Label>
                       <Textarea
@@ -240,7 +304,7 @@ export default function ComplaintDetailPage({ params }: PageProps) {
                         rows={3}
                       />
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-2">
                       {complaint.status === 'claimed' && (
                         <Button
@@ -252,18 +316,29 @@ export default function ComplaintDetailPage({ params }: PageProps) {
                           Mark In Progress
                         </Button>
                       )}
-                      
-                      {['claimed', 'in_progress'].includes(complaint.status) && (
+
+                      {complaint.status === 'in_progress' && (
                         <Button
                           onClick={() => handleStatusUpdate('resolved')}
                           disabled={updating}
                           className="bg-green-600 text-white hover:bg-green-700"
                         >
                           {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          Mark Resolved
+                          Mark as Resolved
                         </Button>
                       )}
-                      
+
+                      {complaint.status === 'claimed' && (
+                        <Button
+                          onClick={() => handleStatusUpdate('resolved')}
+                          disabled={updating}
+                          className="bg-green-600 text-white hover:bg-green-700"
+                        >
+                          {updating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Resolve Directly
+                        </Button>
+                      )}
+
                       {['claimed', 'in_progress'].includes(complaint.status) && (
                         <Button
                           variant="outline"
@@ -277,7 +352,7 @@ export default function ComplaintDetailPage({ params }: PageProps) {
                     </div>
                   </div>
                 )}
-                
+
                 {/* resolved message */}
                 {['resolved', 'closed'].includes(complaint.status) && (
                   <div className="flex items-center gap-2 rounded-lg bg-green-50 p-4 text-green-700">
@@ -288,7 +363,7 @@ export default function ComplaintDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* activity timeline */}
           <div>
             <Card>
@@ -301,14 +376,13 @@ export default function ComplaintDetailPage({ params }: PageProps) {
               <CardContent>
                 <div className="space-y-4">
                   {activityLogs.map((log, index) => (
-                    <div 
-                      key={log.id} 
+                    <div
+                      key={log.id}
                       className="flex gap-3"
                     >
                       <div className="flex flex-col items-center">
-                        <div className={`h-3 w-3 rounded-full ${
-                          index === 0 ? 'bg-primary' : 'bg-muted-foreground/30'
-                        }`} />
+                        <div className={`h-3 w-3 rounded-full ${index === 0 ? 'bg-primary' : 'bg-muted-foreground/30'
+                          }`} />
                         {index < activityLogs.length - 1 && (
                           <div className="h-full w-px bg-border" />
                         )}
