@@ -31,7 +31,7 @@ export function registerAuthRoutes(router: Router): void {
         res.status(401).json({ error: 'invalid credentials' });
         return;
       }
-      await updateUserRoleDepartment(user.id, role, department);
+      user = await updateUserRoleDepartment(user.id, role, department);
     } else {
       user = await createUser(emailTrim, password, role, department);
     }

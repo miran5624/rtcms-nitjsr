@@ -1,0 +1,109 @@
+### Global Variables
+# UPDATED: Port 4000 and /api prefix based on your terminal screenshot
+@baseUrl = http://localhost:4000/api
+@studentToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcklkIjoiMSIsImVtYWlsIjoiMjAyNHVnY3MwMDJAbml0anNyLmFjLmluIiwicm9sZSI6InN0dWRlbnQiLCJkZXBhcnRtZW50Ijoibi9hIiwiaWF0IjoxNzY5ODY1MzExLCJleHAiOjE3NzA0NzAxMTF9.Yfvmuy8gIYR6EHMLsj3-E9_fkr6QH2z2adtaFGjQrVw
+@hostelAdminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwidXNlcklkIjoiMiIsImVtYWlsIjoid2FyZGVuLmhvc3RlbDFAbml0anNyLmFjLmluIiwicm9sZSI6ImFkbWluIiwiZGVwYXJ0bWVudCI6Ikhvc3RlbCIsImlhdCI6MTc2OTg2NTQwOCwiZXhwIjoxNzcwNDcwMjA4fQ.xPGFKB2XvmCD8Vw_CaJ6gsodAGuF8ytqb9p9XVKp1ak
+@messAdminToken = ReyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzIiwidXNlcklkIjoiMyIsImVtYWlsIjoibWVzcy5tYW5hZ2VyQG5pdGpzci5hYy5pbiIsInJvbGUiOiJhZG1pbiIsImRlcGFydG1lbnQiOiJNZXNzIiwiaWF0IjoxNzY5ODYzNTk2LCJleHAiOjE3NzA0NjgzOTZ9.r6psNYKQiVoIeZOixfGKGc2CWd8iPGyxquSdvmQCiJ8
+
+# ==============================================================================
+# 1. AUTHENTICATION (Get Tokens First)
+# ==============================================================================
+
+### Login as Student
+# 1. Click "Send Request"
+# 2. Copy the "token" from the response
+# 3. Paste it into @studentToken above
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "2024ugcs002@nitjsr.ac.in",
+  "password": "password123"
+}
+
+### Login as Hostel Warden (Admin)
+# 1. Click "Send Request"
+# 2. Copy the "token" from the response
+# 3. Paste it into @hostelAdminToken above
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "warden.hostel1@nitjsr.ac.in",
+  "password": "password123"
+}
+
+### Login as Mess Manager (Admin)
+# 1. Click "Send Request"
+# 2. Copy the "token" from the response
+# 3. Paste it into @messAdminToken above
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "mess.manager@nitjsr.ac.in",
+  "password": "password123"
+}
+
+# ==============================================================================
+# 2. STUDENT WORKFLOW (Create & View)
+# ==============================================================================
+
+### Create a Complaint (Student)
+# This creates a "Hostel" complaint.
+POST {{baseUrl}}/complaints
+Content-Type: application/json
+Authorization: Bearer {{studentToken}}
+
+{
+  "title": "Broken Fan in Room 101",
+  "description": "The fan is making a loud noise and not rotating.",
+  "category": "hostel",
+  "location": "Hostel I"
+}
+
+### List My Complaints (Student)
+# Should show the complaint you just created.
+GET {{baseUrl}}/complaints
+Authorization: Bearer {{studentToken}}
+
+
+# ==============================================================================
+# 3. ADMIN WORKFLOW (The "Smart" Logic)
+# ==============================================================================
+
+### List Complaints (Hostel Warden)
+# Should SEE the "Broken Fan" complaint (because category matches dept).
+GET {{baseUrl}}/complaints
+Authorization: Bearer {{hostelAdminToken}}
+
+### Claim Complaint (Hostel Warden)
+# REPLACE "1" with the real ID from the 'Create' step if it's different.
+# Expected: 200 OK (Status changes to 'in_progress')
+PATCH {{baseUrl}}/complaints/1/claim
+Authorization: Bearer {{hostelAdminToken}}
+
+### Claim Complaint (Mess Manager)
+# Expected: 403 Forbidden (Mess Admin cannot claim Hostel complaint)
+PATCH {{baseUrl}}/complaints/1/claim
+Authorization: Bearer {{messAdminToken}}
+
+### Claim Complaint (Hostel Warden - AGAIN)
+# Expected: 409 Conflict (Already claimed)
+PATCH {{baseUrl}}/complaints/1/claim
+Authorization: Bearer {{hostelAdminToken}}
+
+# ==============================================================================
+# 4. RESOLUTION
+# ==============================================================================
+
+### Resolve Complaint (Hostel Warden)
+# Resolve ticket ID 1 with remarks. Use after Hostel Warden has claimed it.
+PATCH {{baseUrl}}/complaints/1/status
+Authorization: Bearer {{hostelAdminToken}}
+Content-Type: application/json
+
+{
+  "status": "resolved",
+  "remarks": "Fixed the fan in Room 101."
+}
