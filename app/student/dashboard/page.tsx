@@ -25,14 +25,17 @@ import {
   AlertCircle,
   CheckCircle,
   FileText,
-  RefreshCw
+  RefreshCw,
+  Activity
 } from 'lucide-react'
+import { TimelineModal } from '@/components/modals/timeline-modal'
 
 export default function StudentDashboard() {
   const { user, loading } = useAuth('student')
   const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null)
   const [history, setHistory] = useState<Complaint[]>([])
   const [refreshing, setRefreshing] = useState(false)
+  const [timelineId, setTimelineId] = useState<number | null>(null)
 
   const loadData = useCallback(async () => {
     if (!user) return
@@ -172,11 +175,23 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* status */}
-                    {activeComplaint.claimedByEmail && (
-                      <p className="text-sm text-muted-foreground">
-                        Assigned to: {activeComplaint.claimedByEmail}
-                      </p>
-                    )}
+                    <div className="flex items-center justify-between">
+                      {activeComplaint.claimedByEmail ? (
+                        <p className="text-sm text-muted-foreground">
+                          Assigned to: {activeComplaint.claimedByEmail}
+                        </p>
+                      ) : <div />}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setTimelineId(parseInt(activeComplaint.id))}
+                      >
+                        <Activity className="h-4 w-4 text-primary" />
+                        Track Status
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="py-8 text-center">
@@ -214,7 +229,11 @@ export default function StudentDashboard() {
                     {history.map(complaint => (
                       <div
                         key={complaint.id}
-                        className="rounded-lg border border-border p-3"
+                        className="rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => {
+                          // Optional: View timeline for history
+                          window.dispatchEvent(new CustomEvent('open-timeline', { detail: complaint.id }))
+                        }}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div>
@@ -250,6 +269,12 @@ export default function StudentDashboard() {
             </Card>
           </div>
         </div>
+
+        <TimelineModal
+          complaintId={timelineId}
+          open={!!timelineId}
+          onOpenChange={(open) => !open && setTimelineId(null)}
+        />
       </main>
     </div>
   )

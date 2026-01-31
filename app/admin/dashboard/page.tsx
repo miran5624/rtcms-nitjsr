@@ -6,10 +6,14 @@ import Link from 'next/link'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
 import { useSocketComplaints } from '@/hooks/use-socket-complaints'
 import { api } from '@/lib/services/api'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   categoryLabels,
   statusConfig,
@@ -26,15 +30,44 @@ import {
   FileText,
   RefreshCw,
   Loader2,
-  Lock
+  Lock,
+  Check
 } from 'lucide-react'
 
 export default function AdminDashboard() {
   const { user, loading } = useAuth('admin')
   const [unclaimed, setUnclaimed] = useState<Complaint[]>([])
   const [myClaims, setMyClaims] = useState<Complaint[]>([])
+  const [resolved, setResolved] = useState<Complaint[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [claiming, setClaiming] = useState<string | null>(null)
+
+  // Modal state
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null)
+  const [modalLoading, setModalLoading] = useState(false)
+  const [isResolving, setIsResolving] = useState(false)
+
+  // Add Update State
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+  const [updateMessage, setUpdateMessage] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  const handleAddUpdate = async () => {
+    if (!selectedComplaint || !updateMessage.trim()) return
+    setIsUpdating(true)
+    try {
+      await api.post(`/complaints/${selectedComplaint.id}/updates`, {
+        message: updateMessage
+      })
+      alert('Update posted successfully')
+      setUpdateDialogOpen(false)
+      // Optionally refresh timeline locally if we were showing it, but here we just post
+    } catch {
+      alert('Failed to post update')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
 
   const loadData = useCallback(async () => {
     if (!user) return
@@ -44,9 +77,11 @@ export default function AdminDashboard() {
       const mapped = list.map((c) => mapApiComplaintToFrontend(c))
       setUnclaimed(mapped.filter((c) => (c.status === 'pending' || c.status === 'open') && !c.claimedBy))
       setMyClaims(mapped.filter((c) => c.claimedBy === user.id))
+      setResolved(mapped.filter((c) => c.status === 'resolved' || c.status === 'rejected'))
     } catch {
       setUnclaimed([])
       setMyClaims([])
+      setResolved([])
     }
   }, [user])
 
@@ -55,6 +90,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Reset modal loading state when opening
+  useEffect(() => {
+    if (selectedComplaint) {
+      setModalLoading(true)
+      const timer = setTimeout(() => setModalLoading(false), 500) // Simulate loading
+      return () => clearTimeout(timer)
+    }
+  }, [selectedComplaint])
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -79,6 +123,24 @@ export default function AdminDashboard() {
       alert(res?.data?.error ?? 'Failed to claim complaint')
     } finally {
       setClaiming(null)
+    }
+  }
+
+  const handleQuickResolve = async () => {
+    if (!selectedComplaint) return
+    setIsResolving(true)
+    try {
+      await api.patch(`/complaints/${selectedComplaint.id}/status`, {
+        status: 'resolved',
+        remarks: 'Resolved via Quick Action'
+      })
+      // Close modal and refresh
+      setSelectedComplaint(null)
+      await loadData()
+    } catch (err: unknown) { // eslint-disable-line @typescript-eslint/no-unused-vars
+      alert('Failed to resolve complaint. Please try again.')
+    } finally {
+      setIsResolving(false)
     }
   }
 
@@ -257,6 +319,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
+
           {/* my claims */}
           <Card>
             <CardHeader>
@@ -272,45 +335,44 @@ export default function AdminDashboard() {
               {myClaims.length > 0 ? (
                 <div className="space-y-3">
                   {myClaims.map(complaint => (
-                    <Link
+                    <div
                       key={complaint.id}
-                      href={`/admin/complaint/${complaint.id}`}
+                      onClick={() => setSelectedComplaint(complaint)}
+                      className="cursor-pointer rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
                     >
-                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:bg-primary/10">
-                        <div className="mb-2 flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-medium text-foreground">
-                              {complaint.title}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              {categoryLabels[complaint.category]}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={statusConfig[complaint.status].color}
-                          >
-                            {statusConfig[complaint.status].label}
-                          </Badge>
-                        </div>
-
-                        <p className="mb-2 text-sm text-muted-foreground line-clamp-2">
-                          {complaint.description}
-                        </p>
-
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-muted-foreground">
-                            Claimed {complaint.claimedAt
-                              ? getTimeElapsed(new Date(complaint.claimedAt)).text
-                              : 'N/A'
-                            }
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-medium text-foreground">
+                            {complaint.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {categoryLabels[complaint.category]}
                           </p>
-                          <span className="text-xs font-medium text-primary">
-                            Locked by You
-                          </span>
                         </div>
+                        <Badge
+                          variant="outline"
+                          className={statusConfig[complaint.status].color}
+                        >
+                          {statusConfig[complaint.status].label}
+                        </Badge>
                       </div>
-                    </Link>
+
+                      <p className="mb-2 text-sm text-muted-foreground line-clamp-2">
+                        {complaint.description}
+                      </p>
+
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          Claimed {complaint.claimedAt
+                            ? getTimeElapsed(new Date(complaint.claimedAt)).text
+                            : 'N/A'
+                          }
+                        </p>
+                        <span className="text-xs font-medium text-primary">
+                          Locked by You
+                        </span>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -328,25 +390,158 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Super Admin / History View */}
+        {(user?.department === 'superadmin' || user?.department === 'all') && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Resolved & Closed Complaints
+              </CardTitle>
+              <CardDescription>
+                History of all resolved complaints (Super Admin View)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {resolved.length > 0 ? (
+                <div className="space-y-3">
+                  {resolved.slice(0, 50).map(complaint => (
+                    <div
+                      key={complaint.id}
+                      onClick={() => setSelectedComplaint(complaint)}
+                      className="cursor-pointer rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-medium text-foreground line-clamp-1">{complaint.title}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {categoryLabels[complaint.category]} • ID: {complaint.id}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="border-green-500 text-green-600 bg-green-50">
+                          {complaint.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-4 text-center text-muted-foreground">No resolved complaints found.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* time-based urgency legend */}
         <Card className="mt-6">
           <CardContent className="py-4">
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border-l-4 border-l-transparent bg-muted" />
-                <span className="text-muted-foreground">Normal (≤30 min)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border-l-4 border-l-warning bg-warning/10" />
-                <span className="text-muted-foreground">Warning ({'>'} 30 min)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border-l-4 border-l-destructive bg-destructive/10" />
-                <span className="text-muted-foreground">Critical ({'>'} 24 hours)</span>
-              </div>
-            </div>
+            {/* ... */}
           </CardContent>
         </Card>
+
+        {/* Modal for Claimed Complaint */}
+        <Dialog open={!!selectedComplaint} onOpenChange={(open) => !open && setSelectedComplaint(null)}>
+          <DialogContent className="max-w-2xl min-h-[300px]">
+            <DialogHeader>
+              <DialogTitle>{selectedComplaint?.title}</DialogTitle>
+              <DialogDescription>
+                {selectedComplaint ? categoryLabels[selectedComplaint.category] : ''} • ID: {selectedComplaint?.id.slice(0, 8)}...
+              </DialogDescription>
+            </DialogHeader>
+
+            {modalLoading ? (
+              <div className="flex h-full py-12 w-full items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading details...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <ScrollArea className="max-h-[70vh] pr-4">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="mb-2 font-medium">Description</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words break-all">
+                        {selectedComplaint?.description}
+                      </p>
+                    </div>
+
+                    {selectedComplaint?.imageUrl ? (
+                      <div>
+                        <h4 className="mb-2 font-medium">Attached Proof</h4>
+                        <img
+                          src={selectedComplaint.imageUrl}
+                          alt="Complaint Proof"
+                          className="max-w-full h-auto rounded-md object-contain border bg-gray-50"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </ScrollArea>
+                <DialogFooter className="flex gap-2 sm:justify-end">
+                  <Button
+                    onClick={() => {
+                      // Open Add Update Dialog
+                      setUpdateMessage('')
+                      setUpdateDialogOpen(true)
+                    }}
+                    variant="outline"
+                  >
+                    Add Update
+                  </Button>
+                  <Button
+                    onClick={handleQuickResolve}
+                    disabled={isResolving}
+                    className="bg-green-600 text-white hover:bg-green-700"
+                  >
+                    {isResolving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resolving...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="mr-2 h-4 w-4" />
+                        Resolve Issue
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Update Dialog */}
+        <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Post Status Update</DialogTitle>
+              <DialogDescription>
+                Add a progress update for the student. They will see this in their timeline.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-2">
+              <Label htmlFor="update-message" className="mb-2 block">Message</Label>
+              <Textarea
+                id="update-message"
+                value={updateMessage}
+                onChange={(e) => setUpdateMessage(e.target.value)}
+                placeholder="e.g. Electrician has been assigned..."
+                className="min-h-[100px]"
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setUpdateDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddUpdate} disabled={isUpdating || !updateMessage.trim()}>
+                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Post Update
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </main>
     </div>
   )

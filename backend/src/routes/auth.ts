@@ -33,7 +33,8 @@ export function registerAuthRoutes(router: Router): void {
       }
       user = await updateUserRoleDepartment(user.id, role, department);
     } else {
-      user = await createUser(emailTrim, password, role, department);
+      res.status(404).json({ error: 'Account not found. Please sign up first.' });
+      return;
     }
     const payload = {
       sub: String(user.id),

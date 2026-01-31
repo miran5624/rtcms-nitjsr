@@ -24,6 +24,8 @@ export function classifyRoleAndDepartment(email: string): ClassifiedUser {
     'deanacad@nitjsr.ac.in': 'academic',
     'estate@nitjsr.ac.in': 'infrastructure',
     'enquiry@nitjsr.ac.in': 'other',
+    'dean.sw@nitjsr.ac.in': 'superadmin',
+    'director@nitjsr.ac.in': 'superadmin',
   };
 
   if (vipMap[lower]) {

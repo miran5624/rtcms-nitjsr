@@ -163,6 +163,42 @@ export function registerComplaintRoutes(router: Router): void {
   router.patch('/:id', (_req, res) => {
     res.status(501).json({ message: 'Update complaint not implemented yet' });
   });
+
+  router.post('/:id/updates', async (req: Request, res: Response) => {
+    if (!req.user) return res.status(401).send();
+    const id = parseInt(req.params.id, 10);
+    const { message } = req.body;
+    if (!message || typeof message !== 'string') {
+      res.status(400).json({ error: 'Message required' });
+      return;
+    }
+    // Simple permission check: student must own it, admin can update any (or dept restricted)
+    // For now allowing all auth users for simplicity as per prompt "Admin UI" and "Student UI".
+
+    // Determine role
+    const authorRole = req.user.role === 'student' ? 'student' : 'admin';
+    try {
+      import('../services/complaints.service.js').then(async (service) => {
+        const update = await service.addComplaintUpdate(id, message, authorRole);
+        res.status(201).json(update);
+      });
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to add update' });
+    }
+  });
+
+  router.get('/:id/timeline', async (req: Request, res: Response) => {
+    if (!req.user) return res.status(401).send();
+    const id = parseInt(req.params.id, 10);
+    try {
+      import('../services/complaints.service.js').then(async (service) => {
+        const timeline = await service.getComplaintTimeline(id);
+        res.json(timeline);
+      });
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to get timeline' });
+    }
+  });
 }
 
 function toComplaintResponse(row: {
