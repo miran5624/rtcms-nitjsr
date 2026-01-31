@@ -1,5 +1,6 @@
 import type { Request, Response, Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
 import {
   createComplaint,
   claimComplaint,
@@ -11,6 +12,7 @@ import {
   updateComplaintStatus,
   type ResolutionStatus,
 } from '../services/complaints.service.js';
+import { uploadBufferToCloudinary } from '../utils/cloudinary-upload.js';
 
 export function registerComplaintRoutes(router: Router): void {
   router.use(authMiddleware);
@@ -25,6 +27,7 @@ export function registerComplaintRoutes(router: Router): void {
       req.user.department,
       req.user.id
     );
+    console.log('[GET /complaints] req.user.id:', req.user.id, 'req.user.role:', req.user.role, 'result count:', complaints.length);
     res.json(complaints.map(toComplaintResponse));
   });
 
@@ -32,39 +35,58 @@ export function registerComplaintRoutes(router: Router): void {
     res.status(501).json({ message: 'Get complaint not implemented yet' });
   });
 
-  router.post('/', async (req: Request, res: Response) => {
-    if (req.user?.role !== 'student') {
-      res.status(403).json({ error: 'students only' });
-      return;
-    }
-    const studentId = req.user.id;
-    const { title, category, description } = req.body ?? {};
-    if (!title || typeof title !== 'string' || title.trim() === '') {
-      res.status(400).json({ error: 'title required' });
-      return;
-    }
-    if (!category || typeof category !== 'string') {
-      res.status(400).json({ error: 'category required' });
-      return;
-    }
-    if (!isValidCategory(category.trim())) {
-      res.status(400).json({
-        error: 'invalid category',
-        valid: ['academic', 'hostel', 'mess', 'internet', 'infrastructure', 'finance', 'other'],
+  router.post('/', upload.single('image'), async (req: Request, res: Response) => {
+    console.log('[POST /complaints] req.file:', req.file ? { fieldname: req.file.fieldname, size: req.file.size } : undefined);
+    try {
+      if (req.user?.role !== 'student') {
+        res.status(403).json({ error: 'students only' });
+        return;
+      }
+      const studentId = req.user.id;
+      const { title, category, description } = req.body ?? {};
+      if (!title || typeof title !== 'string' || title.trim() === '') {
+        res.status(400).json({ error: 'title required' });
+        return;
+      }
+      if (!category || typeof category !== 'string') {
+        res.status(400).json({ error: 'category required' });
+        return;
+      }
+      if (!isValidCategory(category.trim())) {
+        res.status(400).json({
+          error: 'invalid category',
+          valid: ['academic', 'hostel', 'mess', 'internet', 'infrastructure', 'finance', 'other'],
+        });
+        return;
+      }
+      const active = await hasActiveComplaint(studentId);
+      if (active) {
+        res.status(400).json({ error: 'Active complaint already exists' });
+        return;
+      }
+      let image_url: string | undefined;
+      if (req.file?.buffer) {
+        console.log('[POST /complaints] CLOUD_NAME loaded:', !!process.env.CLOUD_NAME, 'value:', process.env.CLOUD_NAME ? '(set)' : '(missing)');
+        try {
+          const { secure_url } = await uploadBufferToCloudinary(req.file.buffer);
+          image_url = secure_url;
+        } catch (e) {
+          console.error('[POST /complaints] Cloudinary upload error:', e);
+          res.status(500).json({ error: 'Image upload failed' });
+          return;
+        }
+      }
+      const complaint = await createComplaint(studentId, {
+        title: title.trim(),
+        category: category.trim(),
+        description: typeof description === 'string' ? description : undefined,
+        image_url,
       });
-      return;
+      res.status(201).json(toComplaintResponse(complaint));
+    } catch (e) {
+      console.error('[POST /complaints] error:', e);
+      res.status(500).json({ error: 'Failed to create complaint' });
     }
-    const active = await hasActiveComplaint(studentId);
-    if (active) {
-      res.status(400).json({ error: 'Active complaint already exists' });
-      return;
-    }
-    const complaint = await createComplaint(studentId, {
-      title: title.trim(),
-      category: category.trim(),
-      description: typeof description === 'string' ? description : undefined,
-    });
-    res.status(201).json(toComplaintResponse(complaint));
   });
 
   router.patch('/:id/claim', async (req: Request, res: Response) => {
@@ -151,6 +173,7 @@ function toComplaintResponse(row: {
   priority: string;
   title: string;
   description: string | null;
+  image_url?: string | null;
   claimed_by: number | null;
   escalation_flag: boolean;
   created_at: Date;
@@ -164,6 +187,7 @@ function toComplaintResponse(row: {
     priority: row.priority,
     title: row.title,
     description: row.description,
+    image_url: row.image_url ?? undefined,
     claimed_by: row.claimed_by,
     escalation_flag: row.escalation_flag,
     created_at: row.created_at,

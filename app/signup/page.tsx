@@ -4,6 +4,7 @@ import React from "react"
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { Header } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Lock, Mail, AlertCircle, Loader2, User, CheckCircle2 } from 'lucide-react'
-import { determineRole, isValidNITJSREmail, getRedirectPath } from '@/lib/auth'
+import { determineRole, isValidNITJSREmail } from '@/lib/auth'
+import { api } from '@/lib/services/api'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -63,29 +65,27 @@ export default function SignUpPage() {
       setLoading(false)
       return
     }
-    
-    // simulate registration delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // create user session (in real app, this would call backend API)
-    const user = {
-      id: crypto.randomUUID(),
-      email: email.toLowerCase(),
-      name: name.trim(),
-      role,
-      createdAt: new Date().toISOString()
+
+    try {
+      await api.post('/auth/signup', {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      })
+    } catch (err: unknown) {
+      const res = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string }; status?: number } }).response
+        : null
+      setError(res?.data?.error ?? 'Registration failed. Please try again.')
+      setLoading(false)
+      return
     }
-    
-    // store in session
-    sessionStorage.setItem('user', JSON.stringify(user))
-    
-    // show success message briefly
+
     setSuccess(true)
-    
-    // redirect based on role after short delay
+    toast.success('Account created! Please sign in.')
+
     setTimeout(() => {
-      const redirectPath = getRedirectPath(role)
-      router.push(redirectPath)
+      router.push('/login')
     }, 1500)
   }
   
@@ -113,10 +113,10 @@ export default function SignUpPage() {
                 <CheckCircle2 className="h-8 w-8 text-success" />
               </div>
               <h2 className="font-serif text-xl font-bold text-foreground">
-                Registration Successful
+                Account created
               </h2>
               <p className="text-center text-muted-foreground">
-                Welcome to the NIT Jamshedpur Complaint Portal. Redirecting to your dashboard...
+                Redirecting to sign in...
               </p>
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </CardContent>

@@ -2,7 +2,7 @@
 
 export type UserRole = 'student' | 'admin' | 'super_admin'
 
-export type ComplaintCategory = 
+export type ComplaintCategory =
   | 'hostel'
   | 'mess'
   | 'academic'
@@ -10,8 +10,9 @@ export type ComplaintCategory =
   | 'infrastructure'
   | 'others'
 
-export type ComplaintStatus = 
+export type ComplaintStatus =
   | 'pending'
+  | 'open'
   | 'claimed'
   | 'in_progress'
   | 'resolved'
@@ -75,7 +76,7 @@ export function getTimeElapsed(date: Date): { minutes: number; hours: number; te
   const diff = now.getTime() - date.getTime()
   const minutes = Math.floor(diff / (1000 * 60))
   const hours = Math.floor(diff / (1000 * 60 * 60))
-  
+
   if (minutes < 60) {
     return { minutes, hours: 0, text: `${minutes} min ago` }
   } else if (hours < 24) {
@@ -104,9 +105,44 @@ export const categoryLabels: Record<ComplaintCategory, string> = {
   others: 'Others'
 }
 
+export interface ApiComplaint {
+  id: number
+  author_id: number
+  category: string
+  status: string
+  priority: string
+  title: string
+  description: string | null
+  image_url?: string | null
+  claimed_by: number | null
+  escalation_flag: boolean
+  created_at: string
+  updated_at: string
+}
+
+export function mapApiComplaintToFrontend(api: ApiComplaint, currentUserEmail?: string): Complaint {
+  return {
+    id: String(api.id),
+    studentId: String(api.author_id),
+    studentEmail: currentUserEmail ?? '',
+    studentName: '',
+    category: (api.category === 'other' ? 'others' : api.category) as ComplaintCategory,
+    title: api.title,
+    description: api.description ?? '',
+    status: api.status as ComplaintStatus,
+    claimedBy: api.claimed_by ? String(api.claimed_by) : null,
+    claimedByEmail: null,
+    claimedAt: null,
+    createdAt: new Date(api.created_at),
+    updatedAt: new Date(api.updated_at),
+    resolvedAt: ['resolved', 'closed'].includes(api.status) ? new Date(api.updated_at) : null,
+  }
+}
+
 // status labels and colors
 export const statusConfig: Record<ComplaintStatus, { label: string; color: string }> = {
   pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+  open: { label: 'Open', color: 'bg-orange-100 text-orange-800 border-orange-300' },
   claimed: { label: 'Claimed', color: 'bg-blue-100 text-blue-800 border-blue-300' },
   in_progress: { label: 'In Progress', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' },
   resolved: { label: 'Resolved', color: 'bg-green-100 text-green-800 border-green-300' },

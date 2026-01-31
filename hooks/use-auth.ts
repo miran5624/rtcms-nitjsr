@@ -11,17 +11,18 @@ export function useAuth(requiredRole?: string | string[]) {
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
-    const stored = sessionStorage.getItem('user')
-    
+    const stored = typeof window !== 'undefined'
+      ? localStorage.getItem('user') ?? sessionStorage.getItem('user')
+      : null
+
     if (!stored) {
       router.push('/login')
       return
     }
-    
+
     try {
       const parsed = JSON.parse(stored) as User
-      
-      // check role if required
+
       if (requiredRole) {
         const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
         if (!roles.includes(parsed.role)) {
@@ -29,17 +30,21 @@ export function useAuth(requiredRole?: string | string[]) {
           return
         }
       }
-      
+
       setUser(parsed)
     } catch {
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
       sessionStorage.removeItem('user')
       router.push('/login')
     } finally {
       setLoading(false)
     }
   }, [router, requiredRole])
-  
+
   const logout = () => {
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
     sessionStorage.removeItem('user')
     router.push('/login')
   }

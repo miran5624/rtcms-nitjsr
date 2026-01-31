@@ -13,7 +13,25 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-react'
-import { determineRole, isValidNITJSREmail, getRedirectPath } from '@/lib/auth'
+import { isValidNITJSREmail, getRedirectPath } from '@/lib/auth'
+import { api } from '@/lib/services/api'
+
+function parseJwtPayload(token: string): { userId?: number; sub?: string; email?: string; role?: string } {
+  try {
+    const base64Url = token.split('.')[1]
+    if (!base64Url) return {}
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(json)
+  } catch {
+    return {}
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,52 +39,49 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-    
-    // validate email domain
+
     if (!isValidNITJSREmail(email)) {
       setError('Please use your NIT Jamshedpur email address (@nitjsr.ac.in)')
       setLoading(false)
       return
     }
-    
-    // determine role based on email
-    const role = determineRole(email)
-    if (!role) {
-      setError('Invalid email format. Please use your institute email.')
+
+    try {
+      const { data } = await api.post<{ token: string }>('/auth/login', {
+        email: email.trim().toLowerCase(),
+        password,
+      })
+
+      const token = data.token
+      const payload = parseJwtPayload(token)
+      const role = payload.role || 'student'
+      const user = {
+        id: String(payload.userId ?? payload.sub ?? ''),
+        email: payload.email ?? email.toLowerCase(),
+        name: email.split('@')[0],
+        role,
+        createdAt: new Date().toISOString(),
+      }
+
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
+
+      const redirectPath = getRedirectPath(role as 'student' | 'admin' | 'super_admin')
+      router.push(redirectPath)
+    } catch (err: unknown) {
+      const res = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string }; status?: number } }).response
+        : null
+      const msg = res?.data?.error ?? (res?.status === 403 ? 'Domain not allowed' : 'Invalid credentials. Please try again.')
+      setError(msg)
+    } finally {
       setLoading(false)
-      return
     }
-    
-    // simulate auth delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
-    // basic password validation (in real app, this goes to backend)
-    if (password.length < 6) {
-      setError('Invalid credentials. Please try again.')
-      setLoading(false)
-      return
-    }
-    
-    // create user session
-    const user = {
-      id: crypto.randomUUID(),
-      email: email.toLowerCase(),
-      name: email.split('@')[0],
-      role,
-      createdAt: new Date().toISOString()
-    }
-    
-    // store in session
-    sessionStorage.setItem('user', JSON.stringify(user))
-    
-    // redirect based on role
-    const redirectPath = getRedirectPath(role)
-    router.push(redirectPath)
   }
   
   return (

@@ -50,9 +50,34 @@ export function registerAuthRoutes(router: Router): void {
     res.json({ token });
   });
 
-  router.post('/register', (_req, res) => {
-    res.status(501).json({ message: 'Auth register not implemented yet' });
-  });
+  async function handleSignup(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body ?? {};
+      if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+        res.status(400).json({ error: 'email and password required' });
+        return;
+      }
+      const emailTrim = email.trim().toLowerCase();
+      if (!emailTrim.endsWith(DOMAIN)) {
+        res.status(403).json({ error: 'domain not allowed' });
+        return;
+      }
+      const existing = await findUserByEmail(emailTrim);
+      if (existing) {
+        res.status(400).json({ error: 'Email already registered' });
+        return;
+      }
+      const { role, department } = classifyRoleAndDepartment(emailTrim);
+      await createUser(emailTrim, password, role, department);
+      res.status(201).json({ message: 'Account created' });
+    } catch (e) {
+      console.error('[signup] error:', e);
+      res.status(500).json({ error: 'Registration failed' });
+    }
+  }
+
+  router.post('/signup', handleSignup);
+  router.post('/register', handleSignup);
 
   router.post('/refresh', (_req, res) => {
     res.status(501).json({ message: 'Auth refresh not implemented yet' });

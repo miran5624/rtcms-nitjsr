@@ -1,7 +1,7 @@
 'use client'
 
 // student dashboard - view complaints and status
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,24 +9,21 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  getActiveComplaint, 
-  getComplaintsByStudent, 
-  getActivityLogs,
-  subscribe,
-  seedDemoData 
-} from '@/lib/store'
-import { 
-  categoryLabels, 
-  statusConfig, 
-  getTimeElapsed 
+import { useSocketComplaints } from '@/hooks/use-socket-complaints'
+import { api } from '@/lib/services/api'
+import {
+  categoryLabels,
+  statusConfig,
+  getTimeElapsed,
+  mapApiComplaintToFrontend,
+  type ApiComplaint
 } from '@/lib/types'
-import type { Complaint, ActivityLog } from '@/lib/types'
-import { 
-  Plus, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
+import type { Complaint } from '@/lib/types'
+import {
+  Plus,
+  Clock,
+  AlertCircle,
+  CheckCircle,
   FileText,
   RefreshCw
 } from 'lucide-react'
@@ -35,44 +32,37 @@ export default function StudentDashboard() {
   const { user, loading } = useAuth('student')
   const [activeComplaint, setActiveComplaint] = useState<Complaint | null>(null)
   const [history, setHistory] = useState<Complaint[]>([])
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
   const [refreshing, setRefreshing] = useState(false)
-  
-  // load complaints
-  const loadData = () => {
+
+  const loadData = useCallback(async () => {
     if (!user) return
-    
-    // seed demo data on first load
-    seedDemoData()
-    
-    const active = getActiveComplaint(user.id)
-    setActiveComplaint(active)
-    
-    if (active) {
-      setActivityLogs(getActivityLogs(active.id))
+    try {
+      const { data } = await api.get<ApiComplaint[]>('/complaints')
+      const list = Array.isArray(data) ? data : []
+      console.log('[Student Dashboard] getComplaints response:', data, 'array length:', list.length)
+      const mapped = list.map((c) => mapApiComplaintToFrontend(c, user.email))
+      const active = mapped.find((c) => ['pending', 'open', 'in_progress'].includes(c.status)) ?? null
+      setActiveComplaint(active ?? null)
+      setHistory(mapped.filter((c) => ['resolved', 'closed'].includes(c.status)))
+    } catch (err) {
+      console.log('[Student Dashboard] getComplaints error:', err)
+      setActiveComplaint(null)
+      setHistory([])
     }
-    
-    const all = getComplaintsByStudent(user.id)
-    setHistory(all.filter(c => ['resolved', 'closed'].includes(c.status)))
-  }
-  
+  }, [user])
+
+  useSocketComplaints(loadData)
+
   useEffect(() => {
     loadData()
-    
-    // subscribe to real-time updates
-    const unsubscribe = subscribe(() => {
-      loadData()
-    })
-    
-    return () => unsubscribe()
-  }, [user])
-  
+  }, [loadData])
+
   const handleRefresh = () => {
     setRefreshing(true)
     loadData()
     setTimeout(() => setRefreshing(false), 500)
   }
-  
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -80,11 +70,11 @@ export default function StudentDashboard() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <DashboardHeader user={user} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -93,18 +83,18 @@ export default function StudentDashboard() {
               View and track your complaints
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleRefresh}
               className="gap-2 bg-transparent"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            
+
             {!activeComplaint && (
               <Link href="/student/new-complaint">
                 <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
@@ -115,7 +105,7 @@ export default function StudentDashboard() {
             )}
           </div>
         </div>
-        
+
         {/* active complaint warning */}
         {activeComplaint && (
           <Alert className="mb-6 border-primary/30 bg-primary/5">
@@ -125,7 +115,7 @@ export default function StudentDashboard() {
             </AlertDescription>
           </Alert>
         )}
-        
+
         <div className="grid gap-6 lg:grid-cols-3">
           {/* current complaint */}
           <div className="lg:col-span-2">
@@ -136,7 +126,7 @@ export default function StudentDashboard() {
                   Current Complaint
                 </CardTitle>
                 <CardDescription>
-                  {activeComplaint 
+                  {activeComplaint
                     ? 'Your complaint is being tracked below'
                     : 'No active complaint at the moment'
                   }
@@ -156,18 +146,18 @@ export default function StudentDashboard() {
                             {categoryLabels[activeComplaint.category]}
                           </p>
                         </div>
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className={statusConfig[activeComplaint.status].color}
                         >
                           {statusConfig[activeComplaint.status].label}
                         </Badge>
                       </div>
-                      
+
                       <p className="mb-3 text-sm text-muted-foreground">
                         {activeComplaint.description}
                       </p>
-                      
+
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -180,41 +170,13 @@ export default function StudentDashboard() {
                         )}
                       </div>
                     </div>
-                    
-                    {/* activity timeline */}
-                    <div>
-                      <h5 className="mb-3 font-medium text-foreground">Activity Timeline</h5>
-                      <div className="space-y-3">
-                        {activityLogs.map((log, index) => (
-                          <div 
-                            key={log.id} 
-                            className="flex gap-3"
-                          >
-                            <div className="flex flex-col items-center">
-                              <div className={`h-3 w-3 rounded-full ${
-                                index === 0 ? 'bg-primary' : 'bg-muted-foreground/30'
-                              }`} />
-                              {index < activityLogs.length - 1 && (
-                                <div className="h-full w-px bg-border" />
-                              )}
-                            </div>
-                            <div className="flex-1 pb-4">
-                              <p className="text-sm font-medium text-foreground">
-                                {log.action}
-                              </p>
-                              {log.remarks && (
-                                <p className="text-xs text-muted-foreground">
-                                  {log.remarks}
-                                </p>
-                              )}
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {new Date(log.timestamp).toLocaleString()} by {log.performedByEmail}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+
+                    {/* status */}
+                    {activeComplaint.claimedByEmail && (
+                      <p className="text-sm text-muted-foreground">
+                        Assigned to: {activeComplaint.claimedByEmail}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="py-8 text-center">
@@ -233,7 +195,7 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* sidebar - history */}
           <div>
             <Card>
@@ -250,7 +212,7 @@ export default function StudentDashboard() {
                 {history.length > 0 ? (
                   <div className="space-y-3">
                     {history.map(complaint => (
-                      <div 
+                      <div
                         key={complaint.id}
                         className="rounded-lg border border-border p-3"
                       >
@@ -263,16 +225,16 @@ export default function StudentDashboard() {
                               {categoryLabels[complaint.category]}
                             </p>
                           </div>
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={statusConfig[complaint.status].color}
                           >
                             {statusConfig[complaint.status].label}
                           </Badge>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">
-                          Resolved {complaint.resolvedAt 
-                            ? new Date(complaint.resolvedAt).toLocaleDateString() 
+                          Resolved {complaint.resolvedAt
+                            ? new Date(complaint.resolvedAt).toLocaleDateString()
                             : 'N/A'
                           }
                         </p>

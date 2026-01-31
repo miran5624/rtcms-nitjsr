@@ -1,3 +1,5 @@
+import 'dotenv/config';
+console.log("Cloudinary Config Check:", process.env.CLOUD_NAME ? "Loaded" : "Missing");
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';

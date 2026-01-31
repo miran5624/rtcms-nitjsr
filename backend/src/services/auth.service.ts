@@ -16,17 +16,32 @@ export function classifyRoleAndDepartment(email: string): ClassifiedUser {
   if (config.superAdminEmails.includes(lower)) {
     return { role: 'super_admin', department: 'all' };
   }
+  // VIP Mappings
+  const vipMap: Record<string, string> = {
+    'chiefwarden@nitjsr.ac.in': 'hostel',
+    'mess@nitjsr.ac.in': 'mess',
+    'it@nitjsr.ac.in': 'internet',
+    'deanacad@nitjsr.ac.in': 'academic',
+    'estate@nitjsr.ac.in': 'infrastructure',
+    'enquiry@nitjsr.ac.in': 'other',
+  };
+
+  if (vipMap[lower]) {
+    return { role: 'admin', department: vipMap[lower] };
+  }
+
   if (STUDENT_EMAIL_REGEX.test(lower)) {
     return { role: 'student', department: 'n/a' };
   }
+
   const part = lower.replace(DOMAIN, '');
-  if (/\b(warden|chief\.warden)\b/.test(part)) return { role: 'admin', department: 'Hostel' };
-  if (/\b(mess|food)\b/.test(part)) return { role: 'admin', department: 'Mess' };
-  if (/\b(hod|dean|faculty)\b/.test(part)) return { role: 'admin', department: 'Academic' };
-  if (/\b(network|wifi|fic\.net)\b/.test(part)) return { role: 'admin', department: 'Internet / Network' };
-  if (/\b(estate|civil|electrical|maintenance)\b/.test(part)) return { role: 'admin', department: 'Infrastructure' };
-  if (/\badmin\b/.test(part)) return { role: 'admin', department: 'General' };
-  return { role: 'admin', department: 'General' };
+  if (/\b(warden|chief\.warden)\b/.test(part)) return { role: 'admin', department: 'hostel' };
+  if (/\b(mess|food)\b/.test(part)) return { role: 'admin', department: 'mess' };
+  if (/\b(hod|dean|faculty)\b/.test(part)) return { role: 'admin', department: 'academic' };
+  if (/\b(network|wifi|fic\.net)\b/.test(part)) return { role: 'admin', department: 'internet' };
+  if (/\b(estate|civil|electrical|maintenance)\b/.test(part)) return { role: 'admin', department: 'infrastructure' };
+  if (/\badmin\b/.test(part)) return { role: 'admin', department: 'other' };
+  return { role: 'admin', department: 'other' };
 }
 
 export interface UserRow {

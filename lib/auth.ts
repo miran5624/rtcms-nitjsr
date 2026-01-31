@@ -3,7 +3,10 @@
 import type { UserRole } from './types'
 
 // email patterns for role detection
-const STUDENT_EMAIL_PATTERN = /^202[0-9]{2}[a-z]{4}[0-9]{3}@nitjsr\.ac\.in$/i
+// student: 4 digits (year) + letters (branch) + digits (roll) e.g. 2024ugcs002
+const STUDENT_EMAIL_PATTERN = /^\d{4}[a-zA-Z]+\d{1,4}@nitjsr\.ac\.in$/
+// faculty/staff: name.warden, name.supervisor, etc.
+const FACULTY_EMAIL_PATTERN = /^[a-zA-Z0-9._-]+\.(warden|supervisor|faculty|hod|dean)@nitjsr\.ac\.in$/
 const ADMIN_EMAIL_SUFFIXES = ['warden@nitjsr.ac.in', 'supervisor@nitjsr.ac.in', 'faculty@nitjsr.ac.in']
 
 // super admin emails loaded from env (comma separated)
@@ -22,18 +25,28 @@ export function determineRole(email: string): UserRole | null {
     return 'super_admin'
   }
   
-  // check admin patterns
+  // check faculty pattern (name.warden@nitjsr.ac.in, etc.)
+  if (FACULTY_EMAIL_PATTERN.test(normalizedEmail)) {
+    return 'admin'
+  }
+
+  // check admin suffixes (warden@nitjsr.ac.in, etc.)
   for (const suffix of ADMIN_EMAIL_SUFFIXES) {
-    if (normalizedEmail.endsWith(suffix) || normalizedEmail === suffix) {
+    if (normalizedEmail === suffix) {
       return 'admin'
     }
   }
-  
-  // check student pattern
+
+  // check student pattern (2024ugcs002@nitjsr.ac.in)
   if (STUDENT_EMAIL_PATTERN.test(normalizedEmail)) {
     return 'student'
   }
-  
+
+  // any other @nitjsr.ac.in treated as admin (generic institute email)
+  if (normalizedEmail.endsWith('@nitjsr.ac.in')) {
+    return 'admin'
+  }
+
   return null
 }
 

@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/hooks/use-auth'
-import { getActiveComplaint, createComplaint } from '@/lib/store'
+import { api } from '@/lib/services/api'
 import { categoryLabels } from '@/lib/types'
 import type { ComplaintCategory } from '@/lib/types'
 import { 
@@ -46,69 +46,72 @@ export default function NewComplaintPage() {
   const [category, setCategory] = useState<ComplaintCategory | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  
-  // check for existing active complaint
+
   useEffect(() => {
-    if (user) {
-      const active = getActiveComplaint(user.id)
-      if (active) {
-        setHasActive(true)
+    if (!user) return
+    const check = async () => {
+      try {
+        const { data } = await api.get('/complaints')
+        const active = Array.isArray(data) && data.some((c: { status: string }) =>
+          ['open', 'in_progress'].includes(c.status)
+        )
+        setHasActive(!!active)
+      } catch {
+        setHasActive(false)
       }
     }
+    check()
   }, [user])
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    
+
     if (!category) {
       setError('Please select a category')
       return
     }
-    
+
     if (!title.trim()) {
       setError('Please enter a title')
       return
     }
-    
+
     if (!description.trim()) {
       setError('Please provide a description')
       return
     }
-    
+
     if (!user) return
-    
+
     setSubmitting(true)
-    
-    // simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
+
     try {
-      createComplaint({
-        studentId: user.id,
-        studentEmail: user.email,
-        studentName: user.name,
-        category,
-        title: title.trim(),
-        description: description.trim(),
-        status: 'pending',
-        claimedBy: null,
-        claimedByEmail: null,
-        claimedAt: null,
-        resolvedAt: null
-      })
-      
+      const formData = new FormData()
+      formData.append('title', title.trim())
+      formData.append('category', category === 'others' ? 'other' : category)
+      formData.append('description', description.trim())
+      if (imageFile) {
+        const isFile = imageFile instanceof File
+        console.log('[NewComplaint] imageFile valid:', isFile, 'name:', imageFile?.name, 'size:', imageFile?.size)
+        if (isFile) {
+          formData.append('image', imageFile)
+        }
+      }
+
+      await api.post('/complaints', formData)
+
       setSuccess(true)
-      
-      // redirect after short delay
-      setTimeout(() => {
-        router.push('/student/dashboard')
-      }, 1500)
-    } catch {
-      setError('Failed to submit complaint. Please try again.')
+      setTimeout(() => router.push('/student/dashboard'), 1500)
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+        : null
+      setError(msg || 'Failed to submit complaint. Please try again.')
       setSubmitting(false)
     }
   }
@@ -257,6 +260,19 @@ export default function NewComplaintPage() {
                   </p>
                 </div>
                 
+                {/* image upload */}
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-sm font-medium">
+                    Attach Image (optional)
+                  </Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+
                 {/* description */}
                 <div className="space-y-2">
                   <Label htmlFor="description" className="text-sm font-medium">

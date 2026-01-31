@@ -25,6 +25,7 @@ export interface CreateComplaintInput {
   title: string;
   category: string;
   description?: string;
+  image_url?: string;
 }
 
 export interface ComplaintRow {
@@ -35,6 +36,7 @@ export interface ComplaintRow {
   priority: string;
   title: string;
   description: string | null;
+  image_url: string | null;
   claimed_by: number | null;
   escalation_flag: boolean;
   created_at: Date;
@@ -70,38 +72,42 @@ export async function listComplaints(
 ): Promise<ComplaintRow[]> {
   if (role === 'student') {
     const r = await pool.query<ComplaintRow>(
-      `select id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at
+      `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
        from complaints where author_id = $1 order by created_at desc`,
       [userId]
     );
+    console.log('[listComplaints] student author_id:', userId, 'result count:', r.rows.length);
     return r.rows;
   }
   if (role === 'super_admin') {
     const r = await pool.query<ComplaintRow>(
-      `select id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at
+      `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
        from complaints order by created_at desc`
     );
+    console.log('[listComplaints] super_admin result count:', r.rows.length);
     return r.rows;
   }
   const filterCat = departmentToFilterCategory(department);
   if (filterCat === null) {
     const r = await pool.query<ComplaintRow>(
-      `select id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at
+      `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
        from complaints order by created_at desc`
     );
+    console.log('[listComplaints] admin (General/All) result count:', r.rows.length);
     return r.rows;
   }
   const r = await pool.query<ComplaintRow>(
-    `select id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at
+    `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
      from complaints where lower(category::text) = lower($1) order by created_at desc`,
     [filterCat]
   );
+  console.log('[listComplaints] admin department filter:', filterCat, 'result count:', r.rows.length);
   return r.rows;
 }
 
 export async function getComplaintById(id: number): Promise<ComplaintRow | null> {
   const r = await pool.query<ComplaintRow>(
-    `select id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at
+    `select id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at
      from complaints where id = $1`,
     [id]
   );
@@ -117,7 +123,7 @@ export async function claimComplaint(
     const update = await client.query<ComplaintRow>(
       `update complaints set claimed_by = $1, status = 'in_progress', updated_at = now()
        where id = $2 and claimed_by is null
-       returning id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at`,
+       returning id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at`,
       [adminId, complaintId]
     );
     const row = update.rows[0] ?? null;
@@ -193,10 +199,10 @@ export async function createComplaint(
   try {
     await client.query('begin');
     const insert = await client.query<ComplaintRow>(
-      `insert into complaints (author_id, category, status, priority, title, description)
-       values ($1, $2::complaint_category, 'open', 'medium', $3, $4)
-       returning id, author_id, category, status, priority, title, description, claimed_by, escalation_flag, created_at, updated_at`,
-      [studentId, input.category, input.title, input.description ?? null]
+      `insert into complaints (author_id, category, status, priority, title, description, image_url)
+       values ($1, $2::complaint_category, 'open', 'medium', $3, $4, $5)
+       returning id, author_id, category, status, priority, title, description, image_url, claimed_by, escalation_flag, created_at, updated_at`,
+      [studentId, input.category, input.title, input.description ?? null, input.image_url ?? null]
     );
     const complaint = insert.rows[0];
     await client.query(
@@ -213,6 +219,7 @@ export async function createComplaint(
           priority: complaint.priority,
           title: complaint.title,
           description: complaint.description,
+          image_url: complaint.image_url,
         }),
       ]
     );

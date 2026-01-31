@@ -1,29 +1,26 @@
 'use client'
 
 // admin dashboard - view and claim complaints
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
-import { 
-  getUnclaimedComplaints, 
-  getClaimedByAdmin,
-  claimComplaint,
-  subscribe,
-  seedDemoData 
-} from '@/lib/store'
-import { 
-  categoryLabels, 
-  statusConfig, 
+import { useSocketComplaints } from '@/hooks/use-socket-complaints'
+import { api } from '@/lib/services/api'
+import {
+  categoryLabels,
+  statusConfig,
   getTimeElapsed,
-  getUrgencyLevel
+  getUrgencyLevel,
+  mapApiComplaintToFrontend,
+  type ApiComplaint
 } from '@/lib/types'
 import type { Complaint } from '@/lib/types'
-import { 
-  Clock, 
+import {
+  Clock,
   AlertTriangle,
   CheckCircle,
   FileText,
@@ -38,53 +35,53 @@ export default function AdminDashboard() {
   const [myClaims, setMyClaims] = useState<Complaint[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [claiming, setClaiming] = useState<string | null>(null)
-  
-  // load complaints
-  const loadData = () => {
+
+  const loadData = useCallback(async () => {
     if (!user) return
-    
-    // seed demo data
-    seedDemoData()
-    
-    setUnclaimed(getUnclaimedComplaints())
-    setMyClaims(getClaimedByAdmin(user.id))
-  }
-  
+    try {
+      const { data } = await api.get<ApiComplaint[]>('/complaints')
+      const list = Array.isArray(data) ? data : []
+      const mapped = list.map((c) => mapApiComplaintToFrontend(c))
+      setUnclaimed(mapped.filter((c) => (c.status === 'pending' || c.status === 'open') && !c.claimedBy))
+      setMyClaims(mapped.filter((c) => c.claimedBy === user.id))
+    } catch {
+      setUnclaimed([])
+      setMyClaims([])
+    }
+  }, [user])
+
+  useSocketComplaints(loadData)
+
   useEffect(() => {
     loadData()
-    
-    // subscribe to updates
-    const unsubscribe = subscribe(() => {
-      loadData()
-    })
-    
-    return () => unsubscribe()
-  }, [user])
-  
+  }, [loadData])
+
   const handleRefresh = () => {
     setRefreshing(true)
     loadData()
     setTimeout(() => setRefreshing(false), 500)
   }
-  
+
   const handleClaim = async (complaintId: string) => {
     if (!user) return
-    
-    // check if admin already has a claim
     if (myClaims.length > 0) {
       alert('You already have a claimed complaint. Please resolve it first.')
       return
     }
-    
     setClaiming(complaintId)
-    
-    // simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    claimComplaint(complaintId, user)
-    setClaiming(null)
+    try {
+      await api.patch(`/complaints/${complaintId}/claim`)
+      await loadData()
+    } catch (err: unknown) {
+      const res = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string }; status?: number } }).response
+        : null
+      alert(res?.data?.error ?? 'Failed to claim complaint')
+    } finally {
+      setClaiming(null)
+    }
   }
-  
+
   const getUrgencyStyles = (createdAt: Date) => {
     const level = getUrgencyLevel(createdAt)
     switch (level) {
@@ -96,7 +93,7 @@ export default function AdminDashboard() {
         return 'border-l-4 border-l-transparent'
     }
   }
-  
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -104,11 +101,11 @@ export default function AdminDashboard() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <DashboardHeader user={user} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -117,10 +114,10 @@ export default function AdminDashboard() {
               Manage and resolve student complaints
             </p>
           </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             className="gap-2 bg-transparent"
           >
@@ -128,7 +125,7 @@ export default function AdminDashboard() {
             Refresh
           </Button>
         </div>
-        
+
         {/* stats cards */}
         <div className="mb-6 grid gap-4 md:grid-cols-3">
           <Card>
@@ -142,7 +139,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
@@ -154,7 +151,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="flex items-center gap-4 pt-6">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
@@ -169,7 +166,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="grid gap-6 lg:grid-cols-2">
           {/* unclaimed complaints */}
           <Card>
@@ -188,9 +185,9 @@ export default function AdminDashboard() {
                   {unclaimed.map(complaint => {
                     const elapsed = getTimeElapsed(new Date(complaint.createdAt))
                     const urgency = getUrgencyLevel(new Date(complaint.createdAt))
-                    
+
                     return (
-                      <div 
+                      <div
                         key={complaint.id}
                         className={`rounded-lg border border-border p-4 ${getUrgencyStyles(new Date(complaint.createdAt))}`}
                       >
@@ -208,12 +205,12 @@ export default function AdminDashboard() {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {categoryLabels[complaint.category]} • {complaint.studentEmail}
+                              {categoryLabels[complaint.category]} • {complaint.studentEmail || `Student #${complaint.studentId}`}
                             </p>
                           </div>
-                          <Badge 
-                            variant="outline" 
-                            className={urgency === 'critical' 
+                          <Badge
+                            variant="outline"
+                            className={urgency === 'critical'
                               ? 'border-destructive bg-destructive/10 text-destructive'
                               : urgency === 'warning'
                                 ? 'border-warning bg-warning/10 text-warning'
@@ -223,11 +220,11 @@ export default function AdminDashboard() {
                             {elapsed.text}
                           </Badge>
                         </div>
-                        
+
                         <p className="mb-3 text-sm text-muted-foreground line-clamp-2">
                           {complaint.description}
                         </p>
-                        
+
                         <Button
                           size="sm"
                           className="bg-primary text-primary-foreground hover:bg-primary/90"
@@ -259,7 +256,7 @@ export default function AdminDashboard() {
               )}
             </CardContent>
           </Card>
-          
+
           {/* my claims */}
           <Card>
             <CardHeader>
@@ -275,7 +272,7 @@ export default function AdminDashboard() {
               {myClaims.length > 0 ? (
                 <div className="space-y-3">
                   {myClaims.map(complaint => (
-                    <Link 
+                    <Link
                       key={complaint.id}
                       href={`/admin/complaint/${complaint.id}`}
                     >
@@ -289,22 +286,22 @@ export default function AdminDashboard() {
                               {categoryLabels[complaint.category]}
                             </p>
                           </div>
-                          <Badge 
-                            variant="outline" 
+                          <Badge
+                            variant="outline"
                             className={statusConfig[complaint.status].color}
                           >
                             {statusConfig[complaint.status].label}
                           </Badge>
                         </div>
-                        
+
                         <p className="mb-2 text-sm text-muted-foreground line-clamp-2">
                           {complaint.description}
                         </p>
-                        
+
                         <div className="flex items-center justify-between">
                           <p className="text-xs text-muted-foreground">
-                            Claimed {complaint.claimedAt 
-                              ? getTimeElapsed(new Date(complaint.claimedAt)).text 
+                            Claimed {complaint.claimedAt
+                              ? getTimeElapsed(new Date(complaint.claimedAt)).text
                               : 'N/A'
                             }
                           </p>
@@ -330,7 +327,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* time-based urgency legend */}
         <Card className="mt-6">
           <CardContent className="py-4">

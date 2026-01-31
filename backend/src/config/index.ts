@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
 
-dotenv.config();
 
 const superAdminEmailsRaw = process.env.SUPER_ADMIN_EMAILS ?? '';
 export const config = {
