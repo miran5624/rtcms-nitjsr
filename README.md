@@ -45,22 +45,61 @@ The system is designed to scale across departments while maintaining clarity, re
 
 ## Key Features
 
-- **Role-Based Access Control**
-  - Students, Admins, and Super Admins each have dedicated dashboards and permissions
-- **End-to-End Complaint Lifecycle**
-  - Open → Claimed → In Progress → Resolved
-- **Real-Time Updates**
-  - Instant status changes and notifications using WebSockets
-- **Activity Timeline**
-  - Every action is logged for transparency and accountability
-- **Evidence Upload**
-  - Image attachments for better issue validation
-- **Department-Based Routing**
-  - Complaints are automatically assigned to the relevant authority
-- **Integrated FAQs**
-  - Reduces redundant complaints through self-service information
-- **Responsive Interface**
-  - Works seamlessly across desktop and mobile devices
+- Authentication & Access Control
+  - Role-Based Access Control (RBAC)
+    - Automatically assigns roles based on email patterns
+  - Secure Login
+    - JWT-based authentication with session management
+  - Domain Restriction
+    - Strictly limits access to @nitjsr.ac.in email addresses
+
+- Student Features
+  - Smart Dashboard
+    - Real-time view of current active complaint and history
+  - Complaint Filing
+    - Easy-to-use form with categories and image attachment support
+  - Real-Time Tracking
+    - Live status updates via WebSocket connection
+  - Interactive Timeline
+    - Detailed history of all actions, comments, and status changes
+  - Spam Prevention
+    - Policy enforcing resolution of current active complaint before filing new ones
+
+- Admin & Faculty Features
+  - Claim System
+    - Admins can claim open complaints to take ownership
+  - Status Management
+    - Workflow to move complaints from Open to Resolved
+  - Communication Channel
+    - Direct channel to post updates and remarks visible to the student
+  - Department Filtering
+    - View only complaints relevant to their specific department
+
+- Super Admin & Oversight
+  - Analytics Dashboard
+    - Visual insights into complaint trends and resolution metrics
+  - Escalation Management
+    - Specific view for handling complaints that have breached SLAs
+  - System-Wide Access
+    - Ability to view and intervene in complaints across all departments
+
+- Automated System Intelligence (Backend)
+  - Auto-Priority Escalation
+    - Automatically bumps priority if unclaimed for 30 minutes
+  - SLA Enforcement
+    - Automatically flags complaints for Super Admin escalation if unresolved for 24 hours
+  - Cron Jobs
+    - Background services running continuously to monitor SLAs
+
+- UI/UX & Technical
+  - Institutional Branding
+    - Professional theme aligned with NIT Jamshedpur’s identity
+  - Responsive Design
+    - Fully optimized for mobile, tablet, and desktop viewing
+  - Landing Page
+    - Public-facing portal with FAQs and usage guides
+  - Performance
+    - Optimized using Next.js App Router and server-side rendering
 
 ## Live Administrative Structure (Current Deployment)
 
