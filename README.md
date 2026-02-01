@@ -2,6 +2,8 @@
 
 ## test students 
 - acc: put any email in format 202xxxxxxxx@nitjsr.ac.in (ie. 2024ugcs002@nitjsr.ac.in)  psw:(any 8 digit entity)
+  or 
+- acc: 2024ugcs010@nitjsr.ac.in psw:pass1234
   
 ## test admins 
 - acc: enquiry@nitjsr.ac.in  psw:pass1234
@@ -15,7 +17,9 @@
 - acc: director@nitjsr.ac.in  psw:pass1234
 - acc: dean.sw@nitjsr.ac.in psw:pass1234
 
-### Note: the backend server might start with a delay as the backend server is hosted on render and the free tier has idle timeout. 
+### Note1: The backend server might start with a delay as the backend server is hosted on render and the free tier has idle timeout. 
+
+### Note2: Vercel links might not open using NIT_JSR_WLAN, so please switch to mobile data or use warp. 
 
 # Smart Complaint Management System (RTCMS)
 
