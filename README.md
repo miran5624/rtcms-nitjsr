@@ -15,6 +15,7 @@
 - acc: director@nitjsr.ac.in  psw:pass1234
 - acc: dean.sw@nitjsr.ac.in psw:pass1234
 
+### Note: the backend server might start with a delay as the backend server is hosted on render and the free tier has idle timeout. 
 
 # Smart Complaint Management System (RTCMS)
 
