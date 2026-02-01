@@ -24,26 +24,26 @@ export default function SignUpPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-    
+
     // validate name
     if (name.trim().length < 2) {
       setError('Please enter your full name')
       setLoading(false)
       return
     }
-    
+
     // validate email domain
     if (!isValidNITJSREmail(email)) {
       setError('Please use your NIT Jamshedpur email address (@nitjsr.ac.in)')
       setLoading(false)
       return
     }
-    
+
     // determine role based on email
     const role = determineRole(email)
     if (!role) {
@@ -51,14 +51,14 @@ export default function SignUpPage() {
       setLoading(false)
       return
     }
-    
+
     // validate password
     if (password.length < 8) {
       setError('Password must be at least 8 characters long')
       setLoading(false)
       return
     }
-    
+
     // check password match
     if (password !== confirmPassword) {
       setError('Passwords do not match')
@@ -88,7 +88,7 @@ export default function SignUpPage() {
       router.push('/login')
     }, 1500)
   }
-  
+
   // password strength indicator
   const getPasswordStrength = () => {
     if (password.length === 0) return null
@@ -99,15 +99,15 @@ export default function SignUpPage() {
     }
     return { label: 'Good', color: 'bg-chart-2' }
   }
-  
+
   const passwordStrength = getPasswordStrength()
-  
+
   if (success) {
     return (
       <div className="min-h-screen bg-secondary">
         <Header showAuthButtons={false} />
         <main className="container mx-auto flex items-center justify-center px-4 py-16">
-          <Card className="w-full max-w-md border-t-4 border-t-success shadow-md">
+          <Card className="w-full max-w-md border-t-4 border-t-primary shadow-md">
             <CardContent className="flex flex-col items-center gap-4 py-12">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
                 <CheckCircle2 className="h-8 w-8 text-success" />
@@ -125,11 +125,11 @@ export default function SignUpPage() {
       </div>
     )
   }
-  
+
   return (
     <div className="min-h-screen bg-secondary">
       <Header showAuthButtons={false} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* left side - information content */}
@@ -138,10 +138,10 @@ export default function SignUpPage() {
               Create Your Account
             </h2>
             <p className="mb-6 text-muted-foreground">
-              Register with your NIT Jamshedpur email to access the complaint management 
+              Register with your NIT Jamshedpur email to access the complaint management
               portal. Your role will be automatically determined based on your email address.
             </p>
-            
+
             <div className="space-y-6">
               <div>
                 <h3 className="mb-3 font-semibold text-foreground">Email Format Guide</h3>
@@ -162,7 +162,7 @@ export default function SignUpPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="mb-3 font-semibold text-foreground">Password Requirements</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
@@ -182,7 +182,7 @@ export default function SignUpPage() {
               </div>
             </div>
           </div>
-          
+
           {/* right side - sign up form */}
           <div className="w-full lg:w-[420px]">
             <Card className="border-t-4 border-t-primary shadow-md">
@@ -200,7 +200,7 @@ export default function SignUpPage() {
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium">
                       Full Name
@@ -218,7 +218,7 @@ export default function SignUpPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-sm font-medium">
                       Email Address
@@ -236,7 +236,7 @@ export default function SignUpPage() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-sm font-medium">
                       Password
@@ -256,12 +256,12 @@ export default function SignUpPage() {
                     {passwordStrength && (
                       <div className="flex items-center gap-2">
                         <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
-                          <div 
+                          <div
                             className={`h-full transition-all ${passwordStrength.color}`}
-                            style={{ 
-                              width: passwordStrength.label === 'Weak' ? '25%' : 
-                                     passwordStrength.label === 'Fair' ? '50%' :
-                                     passwordStrength.label === 'Good' ? '75%' : '100%'
+                            style={{
+                              width: passwordStrength.label === 'Weak' ? '25%' :
+                                passwordStrength.label === 'Fair' ? '50%' :
+                                  passwordStrength.label === 'Good' ? '75%' : '100%'
                             }}
                           />
                         </div>
@@ -271,7 +271,7 @@ export default function SignUpPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword" className="text-sm font-medium">
                       Confirm Password
@@ -292,9 +292,9 @@ export default function SignUpPage() {
                       <p className="text-xs text-destructive">Passwords do not match</p>
                     )}
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                     disabled={loading}
                   >
@@ -308,12 +308,12 @@ export default function SignUpPage() {
                     )}
                   </Button>
                 </form>
-                
+
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground">
                     Already have an account?{' '}
-                    <Link 
-                      href="/login" 
+                    <Link
+                      href="/login"
                       className="font-medium text-primary underline-offset-4 hover:underline"
                     >
                       Sign in
